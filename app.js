@@ -360,6 +360,21 @@ function deleteHistory(index) {
 /**
  * 核心渲染函式：刷新所有表格與畫面元素（加強邊界格線、拉長備註欄）
  */
+
+/**
+ * 處理加入購物車按鈕動畫
+ */
+function animateAddToCart(btn, index) {
+    // 執行原始加入購物車邏輯
+    addToCart(index);
+    
+    // 變更樣式為已選取
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '✓';
+    btn.classList.replace('bg-orange-100', 'bg-green-500');
+    btn.classList.replace('text-orange-700', 'text-white');
+    
+}
 function render() {
     // 1. 渲染：貨物管理清單
     const goodsTable = document.getElementById('goods-list-table');
@@ -371,13 +386,10 @@ function render() {
             const cat = g.category || '10';
             if (currentManagerFilter !== 'all' && currentManagerFilter !== cat) return;
             
-            const dragAttributes = isAllFilter 
-                ? `draggable="true" data-index="${i}" class="drag-row border-b border-gray-200 hover:bg-blue-50/50 transition-colors"` 
-                : `class="border-b border-gray-200 hover:bg-gray-50 opacity-75"`;
+        
 
             managerHTML += `
-                <tr ${dragAttributes}>
-                    <td class="p-3 text-center text-gray-400 font-bold text-lg select-none border-r border-gray-200">${isAllFilter ? '☰' : '🔒'}</td>
+                <tr>
                     <td class="p-3 border-r border-gray-200"><span class="px-2 py-0.5 text-xs rounded font-bold bg-blue-100 text-blue-800">${cat} 類</span></td>
                     <td class="p-3 font-mono text-sm border-r border-gray-200">${g.code || '-'}</td>
                     <td class="p-3 font-medium border-r border-gray-200 break-words">${g.name}</td>
@@ -424,8 +436,7 @@ function render() {
                     <!-- 備註長度彈性並加格線 -->
                     <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-orange-50/10 break-all">${g.note || '-'}</td>
                     <td class="p-3 text-center">
-                        <button onclick="addToCart(${i})" class="bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer">＋</button>
-                    </td>
+                    <button onclick="animateAddToCart(this, ${i})" class="bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer">＋</button>                    </td>
                 </tr>`;
         });
         shippingTable.innerHTML = shippingHTML || `<tr><td colspan="5" class="text-center p-4 text-gray-400">此分區目前沒有商品</td></tr>`;
