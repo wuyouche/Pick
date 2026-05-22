@@ -1,0 +1,78 @@
+/* 預設隱藏列印區域 */
+#print-zone { 
+    display: none; 
+}
+
+/* 網頁列印時的專屬樣式觸發 */
+@media print {
+    body * { 
+        visibility: hidden; 
+    }
+    #print-zone, #print-zone * { 
+        visibility: visible; 
+    }
+    #print-zone {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px; 
+        font-family: sans-serif; 
+        color: #000; 
+        background-color: #fff;
+    }
+}
+
+/* 列印版面內部的自訂基本樣式 */
+.print-header {
+    border-bottom: 2px solid #000; 
+    padding-bottom: 10px; 
+    margin-bottom: 20px;
+}
+
+.print-title {
+    font-size: 28px; 
+    font-weight: bold; 
+    margin: 0; 
+    text-align: center; 
+    letter-spacing: 4px;
+}
+
+.print-meta {
+    display: flex; 
+    justify-content: space-between; 
+    margin-top: 20px; 
+    font-size: 14px;
+}
+
+#print-cust-name {
+    font-size: 16px;
+}
+
+.print-table {
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 13px; /* 稍微縮小字體確保編號放得下 */
+    text-align: left;
+}
+
+.print-table thead tr {
+    background-color: #f2f2f2; 
+    border-top: 1px solid #000; 
+    border-bottom: 1px solid #000; 
+    font-weight: bold;
+}
+
+.print-table th, .print-table td {
+    padding: 6px 4px; /* 優化間距 */
+}
+
+.print-footer {
+    margin-top: 50px; 
+    text-align: right; 
+    font-size: 12px; 
+    color: #555; 
+    border-top: 1px dashed #ccc; 
+    padding-top: 10px;
+}
