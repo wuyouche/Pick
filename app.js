@@ -1,5 +1,5 @@
 // ======= 🚨請在此處替換成你的 Google 部署網址 🚨 =======
-const API_URL = "https://script.google.com/macros/s/AKfycby6mVaTiinn1ztSg_M8y0Nv29CMasa93TpmSWTf6uInyb8D2Af9YwZeFpMmAa93wHpMlA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx0JoBbQm2p-8nGht-Qr59vng2dnfWd_KBQdDuzAA2IlFMk2Ex1zxAqNlZtE5jHryJFYw/exec";
 // ==========================================================
 
 // 全域狀態管理
@@ -12,21 +12,21 @@ let currentShippingFilter = 'all';
 
 // 用於追蹤觸控拖曳的變數 (手機版防抖)
 let touchStartEl = null;
-function isInCart(index) {
-    return cart.some(item => item.originalIndex === index);
+function isInCart(code) {
+    return cart.some(item => item.code === code);
 }
 
 
 function toggleCart(index) {
-    const existingIndex = cart.findIndex(item => item.originalIndex === index);
+    const good = goods[index];
+
+    const existingIndex = cart.findIndex(item => item.code === good.code);
 
     if (existingIndex !== -1) {
         cart.splice(existingIndex, 1);
     } else {
-        const good = goods[index];
         cart.push({
             ...good,
-            originalIndex: index,
             quantity: 1
         });
     }
@@ -41,59 +41,62 @@ function showLoading(show) {
     if (spinner) spinner.classList.toggle('hidden', !show);
 }
 async function fetchHistoryFromCloud() {
-    const historyList = document.getElementById('history-list');
-    if (!historyList) return;
 
     try {
-        const response = await fetch(`${API_URL}?action=getOrders`);
+
+        const response = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "getOrders"
+            })
+        });
+
         const data = await response.json();
 
-        // 將雲端資料存入並反轉顯示
         historyOrders = Array.isArray(data) ? data : [];
-        historyOrders.reverse();
 
         render();
-    } catch (error) {
-        console.error("抓取雲端歷史紀錄失敗:", error);
 
+    } catch (error) {
+        showLoading(false); // ⭐一定要關
+        console.error(error);
     }
 }
 /**
  * 頁面加載時自動從雲端 Excel 抓取資料
  */
 async function fetchGoodsFromCloud() {
+
     const syncStatus = document.getElementById('sync-status');
-    if (!API_URL || API_URL.includes("請把你的")) {
-        if (syncStatus) {
-            syncStatus.innerText = "⚠️ 未設定雲端網址";
-            syncStatus.className = "text-xs bg-red-600 px-2 py-1 rounded text-white";
-        }
-        return;
-    }
 
     showLoading(true);
+
     try {
-        if (syncStatus) {
-            syncStatus.innerText = "🔄 正在同步雲端...";
-            syncStatus.className = "text-xs bg-blue-800 px-2 py-1 rounded text-blue-200";
-        }
 
-        const response = await fetch(API_URL);
-        goods = await response.json();
+        const response = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                action: "getGoods"
+            })
+        });
 
-        if (syncStatus) {
-            syncStatus.innerText = "🟢 雲端連線正常";
-            syncStatus.className = "text-xs bg-green-700 px-2 py-1 rounded text-white";
-        }
+        const data = await response.json();
+
+        console.log("goods data:", data);
+
+        // ⭐ 防呆
+        goods = Array.isArray(data) ? data : [];
+
         render();
+
     } catch (error) {
+
         console.error("抓取雲端資料失敗:", error);
-        if (syncStatus) {
-            syncStatus.innerText = "❌ 雲端同步失敗";
-            syncStatus.className = "text-xs bg-red-600 px-2 py-1 rounded text-white";
-        }
+
     } finally {
+
         showLoading(false);
+
     }
 }
 
@@ -124,101 +127,68 @@ function switchTab(tabId) {
     render();
 }
 
-/**
- * 讀取並解析上傳的 Excel / CSV 檔案
- */
-function importExcel() {
-    const fileInput = document.getElementById('excel-file');
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        alert('請先選擇一個 Excel 或 CSV 檔案！');
-        return;
-    }
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
-            if (jsonData.length === 0) {
-                alert('Excel 內好像沒有資料喔！');
-                return;
-            }
-
-            goods = [];
-            jsonData.forEach(row => {
-                const category = String(row['分類'] || row['category'] || '10').trim();
-                const code = String(row['編號'] || row['code'] || '').trim();
-                const name = String(row['名稱'] || row['品名'] || row['name'] || '').trim();
-                const price = parseFloat(row['價格'] || row['金額'] || row['price'] || 0);
-                const note = String(row['備註'] || row['note'] || '').trim();
-                if (name) goods.push({ category, code, name, price, note });
-            });
-
-            syncGoodsToCloud();
-            fileInput.value = '';
-        } catch (error) {
-            alert('讀取 Excel 失敗，請確認格式。');
-        }
-    };
-    reader.readAsArrayBuffer(file);
-}
 
 /**
  * 新增或修改貨物資料
  */
 function saveGood() {
-    const category = document.getElementById('good-category').value;
-    const code = document.getElementById('good-code').value.trim();
-    const name = document.getElementById('good-name').value.trim();
-    const price = document.getElementById('good-price').value.trim();
-    const note = document.getElementById('good-note').value.trim();
-    const editIndex = document.getElementById('edit-index').value;
+    const goodData = {
+        id: document.getElementById('edit-id').value,
+        category: document.getElementById('good-category').value,
+        code: document.getElementById('good-code').value.trim(),
+        name: document.getElementById('good-name').value.trim(),
+        price: parseFloat(document.getElementById('good-price').value || 0),
+        note: document.getElementById('good-note').value.trim()
+    };
 
-    if (!name) {
-        alert('請填寫貨物名稱！');
-        return;
-    }
-    const goodData = { category, code, name, price: price ? parseFloat(price) : 0, note };
+    const action = goodData.id ? "updateGood" : "addGood";
 
-    if (editIndex === '') {
-        goods.push(goodData);
-    } else {
-        goods[parseInt(editIndex)] = goodData;
-    }
-
-    clearGoodForm();
-    syncGoodsToCloud();
+    fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            action,
+            data: goodData
+        })
+    }).then(() => fetchGoodsFromCloud());
 }
 
 /**
  * 將選定的貨物資料帶入上方表單進行編輯
  */
-function editGood(index) {
-    const g = goods[index];
+function editGood(id) {
+    const g = goods.find(item => item.id === id);
+    if (!g) return;
+
     document.getElementById('good-category').value = g.category || '10';
     document.getElementById('good-code').value = g.code || '';
     document.getElementById('good-name').value = g.name || '';
     document.getElementById('good-price').value = g.price || '';
     document.getElementById('good-note').value = g.note || '';
-    document.getElementById('edit-index').value = index;
+
+    document.getElementById('edit-id').value = g.id;
 
     document.getElementById('btn-save').innerText = '確認修改並同步';
-    document.getElementById('btn-cancel').classList.remove('hidden');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /**
  * 刪除單項貨物項目
  */
-function deleteGood(index) {
-    if (confirm('確定要刪除這項貨物嗎？(將同步從雲端刪除)')) {
-        goods.splice(index, 1);
-        syncGoodsToCloud();
-    }
+async function deleteGood(id) {
+    fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            action: "deleteGood", // ⚠️ 建議統一單數
+            id
+        })
+    })
+        .then(res => res.json())
+        .then(data => {
+            console.log("delete result:", data);
+            fetchGoodsFromCloud();
+        })
+        .catch(err => console.error("delete error:", err));
 }
-
 /**
  * 清空手動新增區的表單欄位
  */
@@ -251,8 +221,10 @@ async function printOrder() {
 
     showLoading(true);
 
+    let orderId = null;
+
     try {
-        await fetch(API_URL, {
+        const res = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: "addOrder",
@@ -269,15 +241,21 @@ async function printOrder() {
                 total: totalAmount
             })
         });
+
+        const result = await res.json();
+        orderId = result.orderId; // ⭐重點在這
+
     } catch (e) {
         console.error("雲端記帳失敗", e);
-    } finally {
-        showLoading(false);
     }
 
     // 儲存至本機快取歷史紀錄
-    historyOrders.unshift({ customer: customer, date: timeStr, items: [...cart] });
-    localStorage.setItem('mom_orders', JSON.stringify(historyOrders));
+    historyOrders.unshift({
+        orderId: orderId,   // ⭐一定要存
+        customer: customer,
+        date: timeStr,
+        items: [...cart]
+    }); localStorage.setItem('mom_orders', JSON.stringify(historyOrders));
 
     // 帶入列印版面資料
     document.getElementById('print-cust-name').innerText = customer;
@@ -312,6 +290,7 @@ async function printOrder() {
         window.print();
         cart = [];
         document.getElementById('order-customer').value = '';
+        showLoading(false)
         render();
     }, 300);
 }
@@ -381,25 +360,42 @@ function reorderFromHistory(historyIndex) {
 /**
  * 刪除本機中的歷史紀錄項目
  */
-async function deleteHistory(index) {
-    if (!confirm('確定要刪除這筆歷史單據嗎？')) return;
+async function deleteHistory(orderId) { // 直接接收 orderId
+    if (!confirm('確定要刪除這筆單據嗎？')) return;
+
+    // 1. 樂觀更新：直接從陣列中過濾掉該 ID
+    const previousOrders = [...historyOrders];
+    historyOrders = historyOrders.filter(o => o.orderId !== orderId);
+    render(); // 畫面立即更新，且完全與 index 無關
 
     showLoading(true);
 
     try {
-        await fetch(API_URL, {
-            method: 'POST',
+        const res = await fetch(API_URL, {
+            method: "POST",
             body: JSON.stringify({
                 action: "deleteOrder",
-                index: historyOrders.length - 1 - index
+                orderId: orderId
             })
         });
 
-        await fetchHistoryFromCloud();
+        const data = await res.json();
+
+        if (!data.ok) {
+            throw new Error("伺服器刪除失敗");
+        }
+
+        // 成功後進行後續處理
+        console.log("刪除成功:", orderId);
+        // 可選：若怕資料不準，可在此靜默重新 fetch
+        // await fetchHistoryFromCloud(); 
 
     } catch (e) {
-        alert("刪除失敗！");
         console.error(e);
+        // 失敗時復原
+        historyOrders = previousOrders;
+        render();
+        alert("刪除失敗，請檢查網路連線。");
     } finally {
         showLoading(false);
     }
@@ -413,21 +409,8 @@ async function deleteHistory(index) {
  * 將特定項目移出購物車
  */
 function removeFromCart(index) {
-    const itemToRemove = cart[index];
-
-    // 1. 執行刪除
     cart.splice(index, 1);
-
-    // 2. 去左側列表找到對應的按鈕並還原
-    const btn = document.querySelector(`button[data-index="${itemToRemove.originalIndex}"]`);
-    if (btn) {
-        btn.innerHTML = '＋';
-        btn.classList.replace('bg-red-100', 'bg-orange-100');
-        btn.classList.replace('text-red-700', 'text-orange-700');
-        btn.onclick = function () { toggleCart(itemToRemove.originalIndex); };
-    }
-
-    renderCart();
+    render();
 }
 
 
@@ -471,8 +454,8 @@ function render() {
                     <!-- 備註欄動態撐長並加上邊界 -->
                     <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-blue-50/10 break-all">${g.note || '-'}</td>
                     <td class="p-3 text-center space-x-1">
-                        <button onclick="editGood(${i})" class="text-blue-600 hover:text-blue-900 text-sm px-2 py-1 border border-blue-300 rounded cursor-pointer bg-white shadow-xs">修改</button>
-                        <button onclick="deleteGood(${i})" class="text-red-600 hover:text-red-900 text-sm px-2 py-1 border border-red-300 rounded cursor-pointer bg-white shadow-xs">刪除</button>
+                        <button onclick="editGood('${g.id}')" class="text-blue-600 hover:text-blue-900 text-sm px-2 py-1 border border-blue-300 rounded cursor-pointer bg-white shadow-xs">修改</button>
+                        <button onclick="deleteGood('${g.id}')" class="text-red-600 hover:text-red-900 text-sm px-2 py-1 border border-red-300 rounded cursor-pointer bg-white shadow-xs">刪除</button>
                     </td>
                 </tr>`;
         });
@@ -499,7 +482,7 @@ function render() {
         goods.forEach((g, i) => {
             const cat = String(g.category || '10');
             if (currentShippingFilter !== 'all' && currentShippingFilter !== cat) return;
-            const checked = isInCart(i);
+            const checked = isInCart(g.code);
             shippingHTML += `
         <tr class="border-b border-gray-200 hover:bg-gray-50">
             <td class="p-3 border-r border-gray-200 break-words">
@@ -547,7 +530,7 @@ function render() {
                 <div class="border border-gray-200 rounded-lg p-4 bg-gray-50 relative shadow-xs">
                     <div class="absolute top-4 right-4 flex space-x-2 items-center">
                         <button onclick="reorderFromHistory(${i})" class="bg-purple-100 text-purple-700 hover:bg-purple-600 hover:text-white text-xs font-bold px-2 py-1 border border-purple-300 rounded transition cursor-pointer">🛒 複製重新撿貨</button>
-                        <button onclick="deleteHistory(${i})" class="text-gray-400 hover:text-red-500 text-xs cursor-pointer">🛑 刪除</button>
+                        <button onclick="deleteHistory('${order.orderId}')" class="text-gray-400 hover:text-red-500 text-xs cursor-pointer">🛑 刪除</button>
                     </div>
                     <h3 class="font-bold text-gray-800 mb-1">👤 客戶：${order.customer}</h3>
                     <p class="text-xs text-gray-400 mb-2">📅 時間：${order.date}</p>
