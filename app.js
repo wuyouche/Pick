@@ -1,5 +1,5 @@
 // ======= 🚨請在此處替換成你的 Google 部署網址 🚨 =======
-const API_URL = "https://script.google.com/macros/s/AKfycbwGHYSc4AQqjte9UbFapCakzWn95RJvS5mNZZm4SjvK3lk5wmjxI1ljkDOkcqdM70cIPg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby6mVaTiinn1ztSg_M8y0Nv29CMasa93TpmSWTf6uInyb8D2Af9YwZeFpMmAa93wHpMlA/exec";
 // ==========================================================
 
 // 全域狀態管理
@@ -47,12 +47,12 @@ async function fetchHistoryFromCloud() {
     try {
         const response = await fetch(`${API_URL}?action=getOrders`);
         const data = await response.json();
-        
+
         // 將雲端資料存入並反轉顯示
         historyOrders = Array.isArray(data) ? data : [];
         historyOrders.reverse();
-                
-        render(); 
+
+        render();
     } catch (error) {
         console.error("抓取雲端歷史紀錄失敗:", error);
 
@@ -70,17 +70,17 @@ async function fetchGoodsFromCloud() {
         }
         return;
     }
-    
+
     showLoading(true);
     try {
         if (syncStatus) {
             syncStatus.innerText = "🔄 正在同步雲端...";
             syncStatus.className = "text-xs bg-blue-800 px-2 py-1 rounded text-blue-200";
         }
-        
+
         const response = await fetch(API_URL);
         goods = await response.json();
-        
+
         if (syncStatus) {
             syncStatus.innerText = "🟢 雲端連線正常";
             syncStatus.className = "text-xs bg-green-700 px-2 py-1 rounded text-white";
@@ -135,15 +135,15 @@ function importExcel() {
     }
     const file = fileInput.files[0];
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            
-            if (jsonData.length === 0) { 
-                alert('Excel 內好像沒有資料喔！'); 
-                return; 
+
+            if (jsonData.length === 0) {
+                alert('Excel 內好像沒有資料喔！');
+                return;
             }
 
             goods = [];
@@ -176,9 +176,9 @@ function saveGood() {
     const note = document.getElementById('good-note').value.trim();
     const editIndex = document.getElementById('edit-index').value;
 
-    if (!name) { 
-        alert('請填寫貨物名稱！'); 
-        return; 
+    if (!name) {
+        alert('請填寫貨物名稱！');
+        return;
     }
     const goodData = { category, code, name, price: price ? parseFloat(price) : 0, note };
 
@@ -203,7 +203,7 @@ function editGood(index) {
     document.getElementById('good-price').value = g.price || '';
     document.getElementById('good-note').value = g.note || '';
     document.getElementById('edit-index').value = index;
-    
+
     document.getElementById('btn-save').innerText = '確認修改並同步';
     document.getElementById('btn-cancel').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -237,9 +237,9 @@ function clearGoodForm() {
  * 執行出貨流程：上傳雲端 orders 紀錄、寫入快取並調用系統列印
  */
 async function printOrder() {
-    if (cart.length === 0) { 
-        alert('出貨清單是空的喔！'); 
-        return; 
+    if (cart.length === 0) {
+        alert('出貨清單是空的喔！');
+        return;
     }
     const customer = document.getElementById('order-customer').value.trim() || '未命名客戶';
     const today = new Date();
@@ -258,7 +258,14 @@ async function printOrder() {
                 action: "addOrder",
                 date: timeStr,
                 customer: customer,
-                items: cart,
+                items: cart.map(item => ({
+                    code: item.code,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity,
+                    note: item.note,
+                    category: item.category
+                })),
                 total: totalAmount
             })
         });
@@ -275,7 +282,7 @@ async function printOrder() {
     // 帶入列印版面資料
     document.getElementById('print-cust-name').innerText = customer;
     document.getElementById('print-order-date').innerText = dateStr;
-    
+
     const tbody = document.getElementById('print-table-body');
     tbody.innerHTML = '';
 
@@ -283,7 +290,7 @@ async function printOrder() {
     for (let i = 0; i < cart.length; i += 2) {
         const item1 = cart[i];
         const item2 = cart[i + 1] || { code: '', name: '', quantity: '', note: '' };
-        
+
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #000';
         tr.innerHTML = `
@@ -344,10 +351,10 @@ function filterShippingCategory(cat) {
  */
 function updateCartQty(index, qty) {
     const parsedQty = parseInt(qty);
-    if (isNaN(parsedQty) || parsedQty <= 0) { 
-        cart.splice(index, 1); 
-    } else { 
-        cart[index].quantity = parsedQty; 
+    if (isNaN(parsedQty) || parsedQty <= 0) {
+        cart.splice(index, 1);
+    } else {
+        cart[index].quantity = parsedQty;
     }
     renderCart();
 }
@@ -364,7 +371,7 @@ function reorderFromHistory(historyIndex) {
     const selectedOrder = historyOrders[historyIndex];
     if (!selectedOrder) return;
     if (cart.length > 0 && !confirm('購物車內目前還有商品，重新撿貨將會清空並取代現有購物車，確定要繼續嗎？')) return;
-    
+
     document.getElementById('order-customer').value = `${selectedOrder.customer}-複製`;
     cart = selectedOrder.items.map(item => ({ ...item }));
     alert(`🛒 已將「${selectedOrder.customer}」的商品載入購物車！`);
@@ -407,19 +414,19 @@ async function deleteHistory(index) {
  */
 function removeFromCart(index) {
     const itemToRemove = cart[index];
-    
+
     // 1. 執行刪除
     cart.splice(index, 1);
-    
+
     // 2. 去左側列表找到對應的按鈕並還原
     const btn = document.querySelector(`button[data-index="${itemToRemove.originalIndex}"]`);
     if (btn) {
         btn.innerHTML = '＋';
         btn.classList.replace('bg-red-100', 'bg-orange-100');
         btn.classList.replace('text-red-700', 'text-orange-700');
-        btn.onclick = function() { toggleCart(itemToRemove.originalIndex); };
+        btn.onclick = function () { toggleCart(itemToRemove.originalIndex); };
     }
-    
+
     renderCart();
 }
 
@@ -452,8 +459,8 @@ function render() {
         goods.forEach((g, i) => {
             const cat = String(g.category || '10');
             if (currentManagerFilter !== 'all' && currentManagerFilter !== cat) return;
-            
-        
+
+
 
             managerHTML += `
                 <tr>
@@ -469,7 +476,7 @@ function render() {
                     </td>
                 </tr>`;
         });
-        
+
         if (!isAllFilter && goods.length > 0) {
             managerHTML += `
                 <tr>
@@ -479,7 +486,7 @@ function render() {
                 </tr>`;
         }
         goodsTable.innerHTML = managerHTML || `<tr><td colspan="7" class="text-center p-4 text-gray-400">沒有商品，請手動新增或從上方匯入</td></tr>`;
-        
+
         if (isAllFilter) {
             initDragAndDropEvents();
         }
@@ -490,10 +497,10 @@ function render() {
     if (shippingTable) {
         let shippingHTML = '';
         goods.forEach((g, i) => {
-            const cat =String( g.category || '10');
+            const cat = String(g.category || '10');
             if (currentShippingFilter !== 'all' && currentShippingFilter !== cat) return;
-          const checked = isInCart(i);
-        shippingHTML += `
+            const checked = isInCart(i);
+            shippingHTML += `
         <tr class="border-b border-gray-200 hover:bg-gray-50">
             <td class="p-3 border-r border-gray-200 break-words">
                 <span class="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded mr-1 font-mono">${g.code || '無'}</span>
@@ -517,8 +524,8 @@ function render() {
                     data-index="${i}"
                     onclick="toggleCart(${i})"
                     class="${checked
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                        : 'bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white'} 
+                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                    : 'bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white'} 
                         font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer"
                 >
                     ${checked ? '🗑️' : '＋'}
@@ -530,7 +537,7 @@ function render() {
     }
 
     // 3. 渲染：歷史紀錄列表區
-// 3. 渲染：歷史紀錄列表區
+    // 3. 渲染：歷史紀錄列表區
     const historyList = document.getElementById('history-list');
     if (historyList) {
         if (historyOrders.length === 0) {
@@ -545,9 +552,9 @@ function render() {
                     <h3 class="font-bold text-gray-800 mb-1">👤 客戶：${order.customer}</h3>
                     <p class="text-xs text-gray-400 mb-2">📅 時間：${order.date}</p>
                     <div class="text-sm text-gray-600 bg-white p-3 rounded border border-gray-200">
-                        ${Array.isArray(order.items) 
-                            ? order.items.map(item => `• <span class="text-xs bg-gray-100 px-1 rounded text-gray-500 mr-1">${item.category || '10'}類</span> [${item.code || '無編號'}] ${item.name} x ${item.quantity} <span class="text-xs text-blue-600 font-medium">(${item.note || '無備註'})</span>`).join('<br>')
-                            : `<p>${order.items}</p>`}
+                        ${Array.isArray(order.items)
+                    ? order.items.map(item => `• <span class="text-xs bg-gray-100 px-1 rounded text-gray-500 mr-1">${item.category || '10'}類</span> [${item.code || '無編號'}] ${item.name} x ${item.quantity} <span class="text-xs text-blue-600 font-medium">(${item.note || '無備註'})</span>`).join('<br>')
+                    : `<p>${order.items}</p>`}
                     </div>
                 </div>`).join('');
         }
@@ -561,11 +568,11 @@ function render() {
 function renderCart() {
     const cartList = document.getElementById('cart-list');
     if (!cartList) return;
-    if (cart.length === 0) { 
-        cartList.innerHTML = `<p class="text-gray-400 text-center py-8">請從左側挑選商品...</p>`; 
-        return; 
+    if (cart.length === 0) {
+        cartList.innerHTML = `<p class="text-gray-400 text-center py-8">請從左側挑選商品...</p>`;
+        return;
     }
-    
+
     cartList.innerHTML = cart.map((item, i) => `
         <div class="flex flex-col p-2 bg-white rounded border border-gray-200 mb-2 shadow-xs">
             <div class="flex justify-between items-start">
@@ -592,33 +599,33 @@ function initDragAndDropEvents() {
     let dragSrcEl = null;
 
     rows.forEach(row => {
-        row.addEventListener('dragstart', function(e) {
+        row.addEventListener('dragstart', function (e) {
             dragSrcEl = this;
             this.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', this.getAttribute('data-index'));
         });
 
-        row.addEventListener('dragover', function(e) {
+        row.addEventListener('dragover', function (e) {
             if (e.preventDefault) e.preventDefault();
             return false;
         });
 
-        row.addEventListener('dragenter', function() {
+        row.addEventListener('dragenter', function () {
             if (this !== dragSrcEl) this.classList.add('bg-blue-50');
         });
 
-        row.addEventListener('dragleave', function() {
+        row.addEventListener('dragleave', function () {
             this.classList.remove('bg-blue-50');
         });
 
-        row.addEventListener('drop', function(e) {
+        row.addEventListener('drop', function (e) {
             e.stopPropagation();
             this.classList.remove('bg-blue-50');
-            
+
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
             const toIndex = parseInt(this.getAttribute('data-index'));
-            
+
             if (fromIndex !== toIndex) {
                 const movedItem = goods.splice(fromIndex, 1)[0];
                 goods.splice(toIndex, 0, movedItem);
@@ -627,19 +634,19 @@ function initDragAndDropEvents() {
             return false;
         });
 
-        row.addEventListener('dragend', function() {
+        row.addEventListener('dragend', function () {
             this.classList.remove('dragging');
             rows.forEach(r => r.classList.remove('bg-blue-50'));
         });
-        
-        // --- 📱 行動裝置觸控拖曳支援 (簡單防抖相容) ---
-        row.addEventListener('touchstart', function(e) {
-            touchStartEl = this;
-        }, {passive: true});
 
-        row.addEventListener('touchend', function(e) {
+        // --- 📱 行動裝置觸控拖曳支援 (簡單防抖相容) ---
+        row.addEventListener('touchstart', function (e) {
+            touchStartEl = this;
+        }, { passive: true });
+
+        row.addEventListener('touchend', function (e) {
             touchStartEl = null;
-        }, {passive: true});
+        }, { passive: true });
     });
 }
 
@@ -647,5 +654,5 @@ function initDragAndDropEvents() {
 window.addEventListener('DOMContentLoaded', () => {
     fetchGoodsFromCloud();
     // 延遲 500ms 讓 Goods 先載入，避免兩者同時搶佔網路資源
-    setTimeout(fetchHistoryFromCloud, 500); 
+    setTimeout(fetchHistoryFromCloud, 500);
 });
