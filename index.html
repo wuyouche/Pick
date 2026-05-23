@@ -181,23 +181,59 @@
     <div id="print-zone">
         <style>
             /* 列印專用樣式 */
-            @media print {
-                body * { visibility: hidden; }
-                #print-zone, #print-zone * { visibility: visible; }
-                #print-zone { position: absolute; left: 0; top: 0; width: 100%; }
-                .tab-content, nav, #loading-spinner { display: none !important; }
-            }
-            #print-zone { display: none; font-family: "Noto Sans TC", sans-serif; padding: 20px; color: #000; }
-            @media print { #print-zone { display: block; } }
-            .print-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
-            .print-title { font-size: 28px; font-weight: 900; letter-spacing: 4px; }
-            .print-meta { font-size: 14px; text-align: right; line-height: 1.5; }
-            
-            /* 清晰且閉合的列印邊界 */
-            .print-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 2px solid #000; }
-            .print-table th { border-bottom: 2px solid #000; padding: 8px 4px; text-align: left; font-weight: bold; font-size: 14px; background-color: #f3f4f6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .print-table td { padding: 6px 4px; font-size: 14px; vertical-align: middle; }
-            .print-footer { text-align: center; border-top: 1px dashed #000; padding-top: 10px; font-size: 12px; font-style: italic; margin-top: 30px; }
+           @media print {
+        /* 強制瀏覽器將紙張邊距歸零 */
+        @page { 
+            margin: 0 !important; 
+            size: auto; 
+        }
+
+        body * { visibility: hidden; }
+        #print-zone, #print-zone * { visibility: visible; }
+        
+        #print-zone {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            padding: 5px !important; /* 極小的邊距，僅留出物理邊界 */
+            margin: 0 !important;
+        }
+
+        /* 隱藏不想印出的元素 */
+        .tab-content, nav, #loading-spinner { display: none !important; }
+    }
+
+    #print-zone { 
+        display: none; 
+        font-family: "Microsoft JhengHei", sans-serif; 
+        color: #000; 
+    }
+    @media print { #print-zone { display: block; } }
+
+    .print-header { 
+        display: flex; justify-content: space-between; align-items: flex-end; 
+        border-bottom: 2px solid #000; padding-bottom: 1px; margin-bottom: 2px; 
+    }
+    .print-title { font-size: 18px; font-weight: 900; }
+    .print-meta { font-size: 11px; text-align: right; }
+    
+    .print-table { 
+        width: 100%; border-collapse: collapse; margin: 0;
+        table-layout: fixed; /* 強制固定寬度，不讓內容溢出 */
+    }
+    .print-table th { 
+        border: 1px solid #000; padding: 1px; font-size: 10px; 
+        background-color: #eee !important; 
+        -webkit-print-color-adjust: exact; 
+    }
+    .print-table td { 
+        padding: 0px 2px; font-size: 10px; border: 1px solid #000; 
+        line-height: 1.1; /* 縮小行距 */
+        word-wrap: break-word;
+    }
+    .print-footer { text-align: center; font-size: 9px; margin-top: 2px; }
         </style>
         <div class="print-header">
             <h1 class="print-title">出 貨 單</h1>
