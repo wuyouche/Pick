@@ -10,6 +10,12 @@ let cart = [];
 let currentManagerFilter = 'all';
 let currentShippingFilter = 'all';
 
+let currentGoodsPage = 1;
+const GOODS_PER_PAGE = 50;
+
+let currentShippingPage = 1;
+const SHIPPING_PER_PAGE = 50;
+
 // 用於追蹤觸控拖曳的變數 (手機版防抖)
 let touchStartEl = null;
 function isInCart(id) {
@@ -23,14 +29,14 @@ function toggleCart(id) {
 
     const goodId = String(good.id);
 
-    const existingIndex = cart.findIndex(item => String(item.id) === goodId);
+    const existingIndex = cart.findIndex(item => String(item.productId) === goodId);
 
     if (existingIndex !== -1) {
         cart.splice(existingIndex, 1);
     } else {
         cart.push({
             id: String(good.id),   // ⭐商品ID
-            productId:String(good.id),
+            productId: String(good.id),
             name: good.name,
             price: good.price,
             note: good.note,
@@ -299,7 +305,7 @@ async function syncOrderToExcel() {
                 action: "addOrder",
                 date: new Date().toLocaleString('zh-TW'),
                 customer: customer,
-                 items: cart.map(item => ({
+                items: cart.map(item => ({
                     orderId: generatedOrderId,   // 如果你有
                     productId: item.id,          // ⭐關鍵新增
                     name: item.name,
@@ -469,14 +475,49 @@ function updateButtonState(goodIndex, isChecked) {
         btn.classList.add('bg-orange-100', 'text-orange-700');
     }
 }
+
+function changeGoodsPage(step) {
+
+    const filteredGoods = goods.filter(g => {
+        const cat = String(g.category || '10 元');
+        return currentManagerFilter === 'all' || currentManagerFilter === cat;
+    });
+
+    const totalPages = Math.ceil(filteredGoods.length / GOODS_PER_PAGE);
+
+    currentGoodsPage += step;
+
+    if (currentGoodsPage < 1) currentGoodsPage = 1;
+    if (currentGoodsPage > totalPages) currentGoodsPage = totalPages;
+
+    render();
+}
 function render() {
     // 1. 渲染：貨物管理清單
+    // 1. 渲染：貨物管理清單
     const goodsTable = document.getElementById('goods-list-table');
+
     if (goodsTable) {
+
         let managerHTML = '';
+
         const isAllFilter = currentManagerFilter === 'all';
 
-        goods.forEach((g, i) => {
+        // ⭐ 先篩選分類
+        const filteredGoods = goods.filter(g => {
+            const cat = String(g.category || '10 元');
+            return currentManagerFilter === 'all' || currentManagerFilter === cat;
+        });
+
+        // ⭐ 分頁
+        const startIndex = (currentGoodsPage - 1) * GOODS_PER_PAGE;
+        const endIndex = startIndex + GOODS_PER_PAGE;
+
+        // ⭐ 只取50筆
+        const pagedGoods = filteredGoods.slice(startIndex, endIndex);
+
+        // ⭐ 改成 pagedGoods
+        pagedGoods.forEach((g, i) => {
             const cat = String(g.category || '10 元');
             if (currentManagerFilter !== 'all' && currentManagerFilter !== cat) return;
 
@@ -504,7 +545,37 @@ function render() {
                 </tr>`;
         }
         goodsTable.innerHTML = managerHTML || `<tr><td colspan="7" class="text-center p-4 text-gray-400">沒有商品，請手動新增或從上方匯入</td></tr>`;
+        const totalPages = Math.ceil(filteredGoods.length / GOODS_PER_PAGE);
 
+        goodsTable.innerHTML += `
+            <tr>
+                <td colspan="4" class="p-4 text-center bg-gray-50">
+                    <div class="flex justify-center items-center gap-2">
+
+                        <button
+                            onclick="changeGoodsPage(-1)"
+                            ${currentGoodsPage <= 1 ? 'disabled' : ''}
+                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            上一頁
+                        </button>
+
+                        <span class="font-bold text-sm">
+                            第 ${currentGoodsPage} / ${totalPages || 1} 頁
+                        </span>
+
+                        <button
+                            onclick="changeGoodsPage(1)"
+                            ${currentGoodsPage >= totalPages ? 'disabled' : ''}
+                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            下一頁
+                        </button>
+
+                    </div>
+                </td>
+            </tr>
+            `;
         if (isAllFilter) {
             initDragAndDropEvents();
         }
@@ -514,9 +585,20 @@ function render() {
     const shippingTable = document.getElementById('shipping-select-table');
     if (shippingTable) {
         let shippingHTML = '';
-        goods.forEach((g, i) => {
+        const filteredShippingGoods = goods.filter(g => {
+            const cat = String(g.category || '10 元');
+            return currentShippingFilter === 'all' || currentShippingFilter === cat;
+        });
+
+        const shippingStart = (currentShippingPage - 1) * SHIPPING_PER_PAGE;
+        const shippingEnd = shippingStart + SHIPPING_PER_PAGE;
+
+        const pagedShippingGoods = filteredShippingGoods.slice(shippingStart, shippingEnd);
+
+        pagedShippingGoods.forEach((g, i) => {
             const cat = String(g.category || '10 元');
             if (currentShippingFilter !== 'all' && currentShippingFilter !== cat) return;
+            const realIndex = goods.findIndex(item => item.id === g.id);
             const checked = isInCart(g.id);
             shippingHTML += `
         <tr class="border-b border-gray-200 hover:bg-gray-50">
@@ -536,7 +618,7 @@ function render() {
 
             <td class="p-3 text-center">
                 <button
-                    data-index="${i}"
+                    data-index="${realIndex}"
                     onclick="toggleCart('${g.id}')"
                     class="${checked
                     ? 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -549,7 +631,40 @@ function render() {
         </tr>`;
         });
         shippingTable.innerHTML = shippingHTML || `<tr><td colspan="5" class="text-center p-4 text-gray-400">此分區目前沒有商品</td></tr>`;
+        const shippingTotalPages = Math.ceil(filteredShippingGoods.length / SHIPPING_PER_PAGE);
+
+        shippingTable.innerHTML += `
+            <tr>
+                <td colspan="4" class="p-4 text-center bg-gray-50">
+                    <div class="flex justify-center items-center gap-2">
+
+                        <button
+                            onclick="changeShippingPage(-1)"
+                            ${currentShippingPage <= 1 ? 'disabled' : ''}
+                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            上一頁
+                        </button>
+
+                        <span class="font-bold text-sm">
+                            第 ${currentShippingPage} / ${shippingTotalPages || 1} 頁
+                        </span>
+
+                        <button
+                            onclick="changeShippingPage(1)"
+                            ${currentShippingPage >= shippingTotalPages ? 'disabled' : ''}
+                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                        >
+                            下一頁
+                        </button>
+
+                    </div>
+                </td>
+            </tr>
+            `;
     }
+
+    
 
     // 3. 渲染：歷史紀錄列表區
     // 3. 渲染：歷史紀錄列表區
@@ -580,6 +695,23 @@ function render() {
 /**
  * 單獨渲染右側出貨清單小購物車
  */
+
+function changeShippingPage(step) {
+
+    const filteredGoods = goods.filter(g => {
+        const cat = String(g.category || '10 元');
+        return currentShippingFilter === 'all' || currentShippingFilter === cat;
+    });
+
+    const totalPages = Math.ceil(filteredGoods.length / SHIPPING_PER_PAGE);
+
+    currentShippingPage += step;
+
+    if (currentShippingPage < 1) currentShippingPage = 1;
+    if (currentShippingPage > totalPages) currentShippingPage = totalPages;
+
+    render();
+}
 function renderCart() {
     const cartList = document.getElementById('cart-list');
     if (!cartList) return;
