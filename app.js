@@ -12,7 +12,27 @@ let currentShippingFilter = 'all';
 
 // 用於追蹤觸控拖曳的變數 (手機版防抖)
 let touchStartEl = null;
+function isInCart(index) {
+    return cart.some(item => item.originalIndex === index);
+}
 
+
+function toggleCart(index) {
+    const existingIndex = cart.findIndex(item => item.originalIndex === index);
+
+    if (existingIndex !== -1) {
+        cart.splice(existingIndex, 1);
+    } else {
+        const good = goods[index];
+        cart.push({
+            ...good,
+            originalIndex: index,
+            quantity: 1
+        });
+    }
+
+    render();
+}
 /**
  * 顯示或隱藏讀取動畫罩
  */
@@ -35,10 +55,7 @@ async function fetchHistoryFromCloud() {
         render(); 
     } catch (error) {
         console.error("抓取雲端歷史紀錄失敗:", error);
-        if (localData) {
-            historyOrders = JSON.parse(localData);
-            render();
-        }
+
     }
 }
 /**
@@ -320,17 +337,7 @@ function filterShippingCategory(cat) {
 
 /**
  * 點選商品加入購物出貨單車
- */
-function addToCart(actualIndex) {
-    const good = goods[actualIndex];
-    const existing = cart.find(item => item.name === good.name && item.code === good.code);
-    if (existing) { 
-        existing.quantity += 1; 
-    } else { 
-        cart.push({ ...good, quantity: 1 }); 
-    }
-    renderCart();
-}
+
 
 /**
  * 修改購物車內指定項目的數量
@@ -394,22 +401,7 @@ async function deleteHistory(index) {
 /**
  * 點選商品加入購物車
  */
-function addToCart(btn, actualIndex) {
-    const good = goods[actualIndex];
-    
-    // 加入購物車，務必保留 originalIndex 以便之後找回按鈕
-    cart.push({ ...good, originalIndex: actualIndex, quantity: 1 });
-    
-    // 按鈕外觀變更
-    btn.innerHTML = '🗑️';
-    btn.classList.replace('bg-orange-100', 'bg-red-100');
-    btn.classList.replace('text-orange-700', 'text-red-700');
-    
-    // 改變按鈕功能，下次點擊時執行 removeFromCartFromList
-    btn.onclick = function() { removeFromCartFromList(btn, actualIndex); };
-    
-    renderCart();
-}
+
 /**
  * 將特定項目移出購物車
  */
@@ -425,29 +417,13 @@ function removeFromCart(index) {
         btn.innerHTML = '＋';
         btn.classList.replace('bg-red-100', 'bg-orange-100');
         btn.classList.replace('text-red-700', 'text-orange-700');
-        btn.onclick = function() { addToCart(btn, itemToRemove.originalIndex); };
+        btn.onclick = function() { toggleCart(itemToRemove.originalIndex); };
     }
     
     renderCart();
 }
 
-function removeFromCartFromList(btn, actualIndex) {
-    // 1. 從 cart 陣列中移除該項目
-    const cartIndex = cart.findIndex(item => item.originalIndex === actualIndex);
-    if (cartIndex !== -1) {
-        cart.splice(cartIndex, 1);
-    }
-    
-    // 2. 恢復按鈕為 "+"
-    btn.innerHTML = '＋';
-    btn.classList.replace('bg-red-100', 'bg-orange-100');
-    btn.classList.replace('text-red-700', 'text-orange-700');
-    
-    // 3. 恢復按鈕功能為 addToCart
-    btn.onclick = function() { addToCart(btn, actualIndex); };
-    
-    renderCart(); // 刷新右側購物車
-}
+
 /**
  * 根據購物車狀態更新對應商品的按鈕外觀
  */
@@ -474,7 +450,7 @@ function render() {
         const isAllFilter = currentManagerFilter === 'all';
 
         goods.forEach((g, i) => {
-            const cat = g.category || '10';
+            const cat = String(g.category || '10');
             if (currentManagerFilter !== 'all' && currentManagerFilter !== cat) return;
             
         
@@ -514,21 +490,41 @@ function render() {
     if (shippingTable) {
         let shippingHTML = '';
         goods.forEach((g, i) => {
-            const cat = g.category || '10';
+            const cat =String( g.category || '10');
             if (currentShippingFilter !== 'all' && currentShippingFilter !== cat) return;
-            shippingHTML += `
-                <tr class="border-b border-gray-200 hover:bg-gray-50">
-                    <td class="p-3 border-r border-gray-200 break-words">
-                        <span class="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded mr-1 font-mono">${g.code || '無'}</span>
-                        <strong class="text-gray-900">${g.name}</strong>
-                    </td>
-                    <td class="p-3 border-r border-gray-200"><span class="px-2 py-0.5 text-xs rounded font-bold bg-orange-100 text-orange-800">${cat} 類</span></td>
-                    <td class="p-3 text-green-600 font-medium border-r border-gray-200">$${g.price}</td>
-                    <!-- 備註長度彈性並加格線 -->
-                    <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-orange-50/10 break-all">${g.note || '-'}</td>
-                    <td class="p-3 text-center">
-        
-                    <button data-index="${i}" onclick="addToCart(this, ${i})" class="bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer">＋</button>                </tr>`;
+          const checked = isInCart(i);
+        shippingHTML += `
+        <tr class="border-b border-gray-200 hover:bg-gray-50">
+            <td class="p-3 border-r border-gray-200 break-words">
+                <span class="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded mr-1 font-mono">${g.code || '無'}</span>
+                <strong class="text-gray-900">${g.name}</strong>
+            </td>
+
+            <td class="p-3 border-r border-gray-200">
+                <span class="px-2 py-0.5 text-xs rounded font-bold bg-orange-100 text-orange-800">${cat} 類</span>
+            </td>
+
+            <td class="p-3 text-green-600 font-medium border-r border-gray-200">
+                $${g.price}
+            </td>
+
+            <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-orange-50/10 break-all">
+                ${g.note || '-'}
+            </td>
+
+            <td class="p-3 text-center">
+                <button
+                    data-index="${i}"
+                    onclick="toggleCart(${i})"
+                    class="${checked
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white'} 
+                        font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer"
+                >
+                    ${checked ? '🗑️' : '＋'}
+                </button>
+            </td>
+        </tr>`;
         });
         shippingTable.innerHTML = shippingHTML || `<tr><td colspan="5" class="text-center p-4 text-gray-400">此分區目前沒有商品</td></tr>`;
     }
