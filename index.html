@@ -36,19 +36,6 @@
 
         <!-- 1️⃣ 貨物管理分頁 -->
         <div id="goods-tab" class="tab-content">
-            <!-- Excel 匯入區區 -->
-            <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg shadow-md mb-6 border border-green-200">
-                <h2 class="text-lg font-bold mb-2 text-green-700"> Excel 批次匯入貨物</h2>
-                <p class="text-xs text-gray-600 mb-4">
-                    請確保 Excel 第一行（標頭）包含這五個欄位：<strong class="text-green-700">分類、編號、名稱、價格、備註</strong>。分類請填 10、50、100 或 1000。
-                </p>
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer" />
-                    <button onclick="importExcel()" class="w-full sm:w-auto bg-emerald-600 text-white px-6 py-2 rounded font-medium hover:bg-emerald-700 shadow transition shrink-0 cursor-pointer">
-                        開始匯入資料並同步雲端
-                    </button>
-                </div>
-            </div>
 
             <!-- 手動表單區（優化欄位比重，放大拉長備註） -->
             <div class="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
