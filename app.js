@@ -327,10 +327,7 @@ function updateCartQty(index, qty) {
 /**
  * 將特定項目移出購物車
  */
-function removeFromCart(index) { 
-    cart.splice(index, 1); 
-    renderCart(); 
-}
+
 
 /**
  * 複製歷史單據的品項快速重新檢貨
@@ -358,22 +355,79 @@ function deleteHistory(index) {
 }
 
 /**
- * 核心渲染函式：刷新所有表格與畫面元素（加強邊界格線、拉長備註欄）
+ * 點選商品加入購物車
  */
-
+function addToCart(btn, actualIndex) {
+    const good = goods[actualIndex];
+    
+    // 加入購物車，務必保留 originalIndex 以便之後找回按鈕
+    cart.push({ ...good, originalIndex: actualIndex, quantity: 1 });
+    
+    // 按鈕外觀變更
+    btn.innerHTML = '🗑️';
+    btn.classList.replace('bg-orange-100', 'bg-red-100');
+    btn.classList.replace('text-orange-700', 'text-red-700');
+    
+    // 改變按鈕功能，下次點擊時執行 removeFromCartFromList
+    btn.onclick = function() { removeFromCartFromList(btn, actualIndex); };
+    
+    renderCart();
+}
 /**
- * 處理加入購物車按鈕動畫
+ * 將特定項目移出購物車
  */
-function animateAddToCart(btn, index) {
-    // 執行原始加入購物車邏輯
-    addToCart(index);
+function removeFromCart(index) {
+    const itemToRemove = cart[index];
     
-    // 變更樣式為已選取
-    const originalContent = btn.innerHTML;
-    btn.innerHTML = '✓';
-    btn.classList.replace('bg-orange-100', 'bg-green-500');
-    btn.classList.replace('text-orange-700', 'text-white');
+    // 1. 執行刪除
+    cart.splice(index, 1);
     
+    // 2. 去左側列表找到對應的按鈕並還原
+    const btn = document.querySelector(`button[data-index="${itemToRemove.originalIndex}"]`);
+    if (btn) {
+        btn.innerHTML = '＋';
+        btn.classList.replace('bg-red-100', 'bg-orange-100');
+        btn.classList.replace('text-red-700', 'text-orange-700');
+        btn.onclick = function() { addToCart(btn, itemToRemove.originalIndex); };
+    }
+    
+    renderCart();
+}
+
+function removeFromCartFromList(btn, actualIndex) {
+    // 1. 從 cart 陣列中移除該項目
+    const cartIndex = cart.findIndex(item => item.originalIndex === actualIndex);
+    if (cartIndex !== -1) {
+        cart.splice(cartIndex, 1);
+    }
+    
+    // 2. 恢復按鈕為 "+"
+    btn.innerHTML = '＋';
+    btn.classList.replace('bg-red-100', 'bg-orange-100');
+    btn.classList.replace('text-red-700', 'text-orange-700');
+    
+    // 3. 恢復按鈕功能為 addToCart
+    btn.onclick = function() { addToCart(btn, actualIndex); };
+    
+    renderCart(); // 刷新右側購物車
+}
+/**
+ * 根據購物車狀態更新對應商品的按鈕外觀
+ */
+function updateButtonState(goodIndex, isChecked) {
+    // 透過 data-index 找到對應的按鈕
+    const btn = document.querySelector(`button[data-index="${goodIndex}"]`);
+    if (!btn) return;
+
+    if (isChecked) {
+        btn.innerHTML = '✓';
+        btn.classList.remove('bg-orange-100', 'text-orange-700');
+        btn.classList.add('bg-green-500', 'text-white');
+    } else {
+        btn.innerHTML = '＋';
+        btn.classList.remove('bg-green-500', 'text-white');
+        btn.classList.add('bg-orange-100', 'text-orange-700');
+    }
 }
 function render() {
     // 1. 渲染：貨物管理清單
@@ -436,8 +490,8 @@ function render() {
                     <!-- 備註長度彈性並加格線 -->
                     <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-orange-50/10 break-all">${g.note || '-'}</td>
                     <td class="p-3 text-center">
-                    <button onclick="animateAddToCart(this, ${i})" class="bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer">＋</button>                    </td>
-                </tr>`;
+        
+                    <button data-index="${i}" onclick="addToCart(this, ${i})" class="bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white font-bold px-3 py-1 rounded-full text-sm transition cursor-pointer">＋</button>                </tr>`;
         });
         shippingTable.innerHTML = shippingHTML || `<tr><td colspan="5" class="text-center p-4 text-gray-400">此分區目前沒有商品</td></tr>`;
     }
