@@ -1,10 +1,11 @@
 // ======= 🚨請在此處替換成你的 Google 部署網址 🚨 =======
-const API_URL = "https://script.google.com/macros/s/AKfycbx9Xrx_7HQpBHdgMHs_toywbCDC8wwo6dokzt5nIDDQYrzpo-sNzSJ44BGjXYDvmi9qeA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyysM7oFf8btpLdOue1OkViG_mgoFu16I7MT5HARcRu3iAl_1HjmHia6OUc5bYWwQ448A/exec";
 // ==========================================================
 
 // 全域狀態管理
+// 修改這行，讓 historyOrders 預設為空，等待雲端載入
+let historyOrders = [];
 let goods = [];
-let historyOrders = JSON.parse(localStorage.getItem('mom_orders')) || [];
 let cart = [];
 let currentManagerFilter = 'all';
 let currentShippingFilter = 'all';
@@ -19,7 +20,31 @@ function showLoading(show) {
     const spinner = document.getElementById('loading-spinner');
     if (spinner) spinner.classList.toggle('hidden', !show);
 }
+async function fetchHistoryFromCloud() {
+    const historyList = document.getElementById('history-list');
+    if (!historyList) return;
 
+    try {
+        const response = await fetch(`${API_URL}?action=getOrders`);
+        const data = await response.json();
+        
+        // 將雲端資料存入並反轉顯示
+        historyOrders = Array.isArray(data) ? data.reverse() : [];
+        
+        // 成功抓取後，將資料存入 localStorage 以備離線時也能顯示
+        localStorage.setItem('mom_orders', JSON.stringify(historyOrders));
+        
+        render(); 
+    } catch (error) {
+        console.error("抓取雲端歷史紀錄失敗:", error);
+        // 如果雲端抓不到，試著從本機快取讀取
+        const localData = localStorage.getItem('mom_orders');
+        if (localData) {
+            historyOrders = JSON.parse(localData);
+            render();
+        }
+    }
+}
 /**
  * 頁面加載時自動從雲端 Excel 抓取資料
  */
@@ -497,6 +522,7 @@ function render() {
     }
 
     // 3. 渲染：歷史紀錄列表區
+// 3. 渲染：歷史紀錄列表區
     const historyList = document.getElementById('history-list');
     if (historyList) {
         if (historyOrders.length === 0) {
@@ -511,7 +537,9 @@ function render() {
                     <h3 class="font-bold text-gray-800 mb-1">👤 客戶：${order.customer}</h3>
                     <p class="text-xs text-gray-400 mb-2">📅 時間：${order.date}</p>
                     <div class="text-sm text-gray-600 bg-white p-3 rounded border border-gray-200">
-                        ${order.items.map(item => `• <span class="text-xs bg-gray-100 px-1 rounded text-gray-500 mr-1">${item.category || '10'}類</span> [${item.code || '無編號'}] ${item.name} x ${item.quantity} <span class="text-xs text-blue-600 font-medium">(${item.note || '無備註'})</span>`).join('<br>')}
+                        ${Array.isArray(order.items) 
+                            ? order.items.map(item => `• <span class="text-xs bg-gray-100 px-1 rounded text-gray-500 mr-1">${item.category || '10'}類</span> [${item.code || '無編號'}] ${item.name} x ${item.quantity} <span class="text-xs text-blue-600 font-medium">(${item.note || '無備註'})</span>`).join('<br>')
+                            : `<p>${order.items}</p>`}
                     </div>
                 </div>`).join('');
         }
@@ -610,4 +638,6 @@ function initDragAndDropEvents() {
 // 綁定視窗載入完成事件，啟動初始化抓取資料
 window.addEventListener('DOMContentLoaded', () => {
     fetchGoodsFromCloud();
+    // 延遲 500ms 讓 Goods 先載入，避免兩者同時搶佔網路資源
+    setTimeout(fetchHistoryFromCloud, 500); 
 });
