@@ -1,5 +1,5 @@
 // ======= 🚨請在此處替換成你的 Google 部署網址 🚨 =======
-const API_URL = "https://script.google.com/macros/s/AKfycbx0JoBbQm2p-8nGht-Qr59vng2dnfWd_KBQdDuzAA2IlFMk2Ex1zxAqNlZtE5jHryJFYw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwmACi2dKt2tsTSPKOOVUz9o_R6jdnMboz9E3JKt0SeGlOLqGabeVywftKo4RUxQR_EjQ/exec";
 // ==========================================================
 
 // 全域狀態管理
@@ -12,21 +12,29 @@ let currentShippingFilter = 'all';
 
 // 用於追蹤觸控拖曳的變數 (手機版防抖)
 let touchStartEl = null;
-function isInCart(code) {
-    return cart.some(item => item.code === code);
+function isInCart(id) {
+    return cart.some(item => item.productId === id);
 }
 
 
-function toggleCart(index) {
-    const good = goods[index];
+function toggleCart(id) {
+    const good = goods.find(g => String(g.id) === String(id));
+    if (!good) return;
 
-    const existingIndex = cart.findIndex(item => item.code === good.code);
+    const goodId = String(good.id);
+
+    const existingIndex = cart.findIndex(item => String(item.id) === goodId);
 
     if (existingIndex !== -1) {
         cart.splice(existingIndex, 1);
     } else {
         cart.push({
-            ...good,
+            id: String(good.id),   // ⭐商品ID
+            productId:String(good.id),
+            name: good.name,
+            price: good.price,
+            note: good.note,
+            category: good.category,
             quantity: 1
         });
     }
@@ -136,12 +144,9 @@ function saveGood() {
     const goodData = {
         id: document.getElementById('edit-id').value,
         category: document.getElementById('good-category').value,
-        code: document.getElementById('good-code').value.trim(),
         name: document.getElementById('good-name').value.trim(),
-        price: parseFloat(document.getElementById('good-price').value || 0),
         note: document.getElementById('good-note').value.trim()
     };
-
     const action = goodData.id ? "updateGood" : "addGood";
 
     fetch(API_URL, {
@@ -160,16 +165,17 @@ function editGood(id) {
     const g = goods.find(item => item.id === id);
     if (!g) return;
 
-    document.getElementById('good-category').value = g.category || '10';
-    document.getElementById('good-code').value = g.code || '';
+    document.getElementById('good-category').value = g.category || '10 元';
     document.getElementById('good-name').value = g.name || '';
-    document.getElementById('good-price').value = g.price || '';
     document.getElementById('good-note').value = g.note || '';
 
     document.getElementById('edit-id').value = g.id;
 
     document.getElementById('btn-save').innerText = '確認修改並同步';
 }
+
+
+
 
 /**
  * 刪除單項貨物項目
@@ -193,10 +199,8 @@ async function deleteGood(id) {
  * 清空手動新增區的表單欄位
  */
 function clearGoodForm() {
-    document.getElementById('good-category').value = '10';
-    document.getElementById('good-code').value = '';
+    document.getElementById('good-category').value = '10 元';
     document.getElementById('good-name').value = '';
-    document.getElementById('good-price').value = '';
     document.getElementById('good-note').value = '';
     document.getElementById('edit-index').value = '';
     document.getElementById('btn-save').innerText = '儲存貨物至雲端';
@@ -219,80 +223,105 @@ async function printOrder() {
     let totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     let itemsSummary = cart.map(item => `${item.name}x${item.quantity}`).join(', ');
 
-    showLoading(true);
 
-    let orderId = null;
+
+
+    // 帶入列印版面資料
+    document.getElementById('print-cust-name').innerText = customer;
+    document.getElementById('print-order-date').innerText = dateStr;
+
+    // ===== PDF 雙欄交錯排版（1 3 / 2 4）=====
+    const tbody = document.getElementById('print-table-body');
+    tbody.innerHTML = '';
+
+    // 👉 關鍵：切一半
+    const half = Math.ceil(cart.length / 2);
+
+    // 👉 左右交錯輸出
+    for (let i = 0; i < half; i++) {
+
+        const left = cart[i];        // 左邊：0,1
+        const right = cart[i + half] || null; // 右邊：2,3
+
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #000';
+
+        tr.innerHTML = `
+        <!-- 左邊 -->
+        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 00; font-size: 20px;">
+            ${left ? left.name : ''}
+        </td>
+        <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
+            ${left ? left.quantity : ''}
+        </td>
+        <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
+            ${left ? (left.note || '') : ''}
+        </td>
+
+        <!-- 右邊 -->
+        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500;font-size: 20px;">
+            ${right ? right.name : ''}
+        </td>
+        <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
+            ${right ? right.quantity : ''}
+        </td>
+        <td style="padding: 6px; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
+            ${right ? (right.note || '') : ''}
+        </td>
+    `;
+
+        tbody.appendChild(tr);
+    }
+    // 延遲小段時間確保 DOM 渲染完畢後開啟列印視窗
+    setTimeout(() => {
+        window.print();
+        showLoading(false)
+        render();
+    }, 300);
+}
+
+
+async function syncOrderToExcel() {
+    if (cart.length === 0) {
+        alert("購物車是空的，無法同步");
+        return;
+    }
+
+    const customer = document.getElementById('order-customer').value.trim() || '未命名客戶';
+    const generatedOrderId = crypto.randomUUID();
+
+    showLoading(true);
 
     try {
         const res = await fetch(API_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: "addOrder",
-                date: timeStr,
+                date: new Date().toLocaleString('zh-TW'),
                 customer: customer,
-                items: cart.map(item => ({
-                    code: item.code,
+                 items: cart.map(item => ({
+                    orderId: generatedOrderId,   // 如果你有
+                    productId: item.id,          // ⭐關鍵新增
                     name: item.name,
-                    price: item.price,
                     quantity: item.quantity,
                     note: item.note,
                     category: item.category
                 })),
-                total: totalAmount
+                total: cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0)
             })
         });
 
-        const result = await res.json();
-        orderId = result.orderId; // ⭐重點在這
+        const data = await res.json();
 
-    } catch (e) {
-        console.error("雲端記帳失敗", e);
+        console.log("同步成功:", data);
+        alert("✅ 已同步到 Excel");
+
+    } catch (err) {
+        console.error("同步失敗:", err);
+        alert("❌ 同步失敗，請檢查網路或後端");
+    } finally {
+        showLoading(false);
     }
-
-    // 儲存至本機快取歷史紀錄
-    historyOrders.unshift({
-        orderId: orderId,   // ⭐一定要存
-        customer: customer,
-        date: timeStr,
-        items: [...cart]
-    }); localStorage.setItem('mom_orders', JSON.stringify(historyOrders));
-
-    // 帶入列印版面資料
-    document.getElementById('print-cust-name').innerText = customer;
-    document.getElementById('print-order-date').innerText = dateStr;
-
-    const tbody = document.getElementById('print-table-body');
-    tbody.innerHTML = '';
-
-    // 雙排雙欄雙軌列印排版結構（優化格線邊界，保持備註長度彈性）
-    for (let i = 0; i < cart.length; i += 2) {
-        const item1 = cart[i];
-        const item2 = cart[i + 1] || { code: '', name: '', quantity: '', note: '' };
-
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #000';
-        tr.innerHTML = `
-            <td style="padding: 6px; border-right: 1px solid #000; font-family: monospace; font-size: 12px;">${item1.code || '-'}</td>
-            <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500;">${item1.name}</td>
-            <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 14px;">${item1.quantity}</td>
-            <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all; color: #334155; font-size: 12px; font-weight: bold;">${item1.note || ''}</td>
-            
-            <td style="padding: 6px; padding-left: 10px; border-right: 1px solid #000; font-family: monospace; font-size: 12px;">${item2.code || '-'}</td>
-            <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500;">${item2.name || ''}</td>
-            <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 14px;">${item2.quantity || ''}</td>
-            <td style="padding: 6px; word-break: break-all; color: #334155; font-size: 12px; font-weight: bold;">${item2.note || ''}</td>
-        `;
-        tbody.appendChild(tr);
-    }
-
-    // 延遲小段時間確保 DOM 渲染完畢後開啟列印視窗
-    setTimeout(() => {
-        window.print();
-        cart = [];
-        document.getElementById('order-customer').value = '';
-        showLoading(false)
-        render();
-    }, 300);
 }
 
 /**
@@ -349,11 +378,19 @@ function updateCartQty(index, qty) {
 function reorderFromHistory(historyIndex) {
     const selectedOrder = historyOrders[historyIndex];
     if (!selectedOrder) return;
+
     if (cart.length > 0 && !confirm('購物車內目前還有商品，重新撿貨將會清空並取代現有購物車，確定要繼續嗎？')) return;
 
     document.getElementById('order-customer').value = `${selectedOrder.customer}-複製`;
+
     cart = selectedOrder.items.map(item => ({ ...item }));
+
     alert(`🛒 已將「${selectedOrder.customer}」的商品載入購物車！`);
+
+    // ⭐⭐⭐ 關鍵補這兩行
+    render();
+    renderCart();
+
     switchTab('shipping-tab');
 }
 
@@ -440,17 +477,15 @@ function render() {
         const isAllFilter = currentManagerFilter === 'all';
 
         goods.forEach((g, i) => {
-            const cat = String(g.category || '10');
+            const cat = String(g.category || '10 元');
             if (currentManagerFilter !== 'all' && currentManagerFilter !== cat) return;
 
 
 
             managerHTML += `
                 <tr>
-                    <td class="p-3 border-r border-gray-200"><span class="px-2 py-0.5 text-xs rounded font-bold bg-blue-100 text-blue-800">${cat} 類</span></td>
-                    <td class="p-3 font-mono text-sm border-r border-gray-200">${g.code || '-'}</td>
+                    <td class="p-3 border-r border-gray-200"><span class="px-2 py-0.5 text-xs rounded font-bold bg-blue-100 text-blue-800">${cat} </span></td>
                     <td class="p-3 font-medium border-r border-gray-200 break-words">${g.name}</td>
-                    <td class="p-3 text-green-600 font-bold border-r border-gray-200">$${g.price}</td>
                     <!-- 備註欄動態撐長並加上邊界 -->
                     <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-blue-50/10 break-all">${g.note || '-'}</td>
                     <td class="p-3 text-center space-x-1">
@@ -480,23 +515,20 @@ function render() {
     if (shippingTable) {
         let shippingHTML = '';
         goods.forEach((g, i) => {
-            const cat = String(g.category || '10');
+            const cat = String(g.category || '10 元');
             if (currentShippingFilter !== 'all' && currentShippingFilter !== cat) return;
-            const checked = isInCart(g.code);
+            const checked = isInCart(g.id);
             shippingHTML += `
         <tr class="border-b border-gray-200 hover:bg-gray-50">
             <td class="p-3 border-r border-gray-200 break-words">
-                <span class="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded mr-1 font-mono">${g.code || '無'}</span>
                 <strong class="text-gray-900">${g.name}</strong>
             </td>
 
             <td class="p-3 border-r border-gray-200">
-                <span class="px-2 py-0.5 text-xs rounded font-bold bg-orange-100 text-orange-800">${cat} 類</span>
+                <span class="px-2 py-0.5 text-xs rounded font-bold bg-orange-100 text-orange-800">${cat} </span>
             </td>
 
-            <td class="p-3 text-green-600 font-medium border-r border-gray-200">
-                $${g.price}
-            </td>
+          
 
             <td class="p-3 text-gray-600 text-sm font-semibold border-r border-gray-200 bg-orange-50/10 break-all">
                 ${g.note || '-'}
@@ -505,7 +537,7 @@ function render() {
             <td class="p-3 text-center">
                 <button
                     data-index="${i}"
-                    onclick="toggleCart(${i})"
+                    onclick="toggleCart('${g.id}')"
                     class="${checked
                     ? 'bg-red-100 text-red-700 hover:bg-red-200'
                     : 'bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white'} 
@@ -536,7 +568,7 @@ function render() {
                     <p class="text-xs text-gray-400 mb-2">📅 時間：${order.date}</p>
                     <div class="text-sm text-gray-600 bg-white p-3 rounded border border-gray-200">
                         ${Array.isArray(order.items)
-                    ? order.items.map(item => `• <span class="text-xs bg-gray-100 px-1 rounded text-gray-500 mr-1">${item.category || '10'}類</span> [${item.code || '無編號'}] ${item.name} x ${item.quantity} <span class="text-xs text-blue-600 font-medium">(${item.note || '無備註'})</span>`).join('<br>')
+                    ? order.items.map(item => `• <span class="text-xs bg-gray-100 px-1 rounded text-gray-500 mr-1">${item.category || '10 元'}</span> [ ${item.name} x ${item.quantity} <span class="text-xs text-blue-600 font-medium">(${item.note || '無備註'})</span>`).join('<br>')
                     : `<p>${order.items}</p>`}
                     </div>
                 </div>`).join('');
@@ -559,12 +591,11 @@ function renderCart() {
     cartList.innerHTML = cart.map((item, i) => `
         <div class="flex flex-col p-2 bg-white rounded border border-gray-200 mb-2 shadow-xs">
             <div class="flex justify-between items-start">
-                <span class="font-medium text-gray-900 break-all pr-2">[${item.code || '-'}] ${item.name}</span>
+                <span class="font-medium text-gray-900 break-all pr-2">${item.name}</span>
                 <button onclick="removeFromCart(${i})" class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer">❌</button>
             </div>
             <div class="text-xs text-gray-400 mt-0.5 break-all">備註：<span class="text-blue-600 font-medium">${item.note || '無'}</span></div>
             <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                <span class="text-green-600 font-bold text-sm">$${item.price} / 個</span>
                 <div class="flex items-center space-x-1">
                     <span class="text-xs text-gray-500">數量:</span>
                     <input type="number" value="${item.quantity}" onchange="updateCartQty(${i}, this.value)" class="w-14 border border-gray-300 rounded text-center text-sm p-0.5 font-bold">

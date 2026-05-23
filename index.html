@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
+
 <body class="bg-gray-100 text-gray-800 font-sans">
 
     <!-- 頂部導覽列 -->
@@ -16,9 +18,12 @@
             <h1 class="text-xl font-bold">📦 媽媽的小幫手出貨系統 (雲端資料庫版)</h1>
             <div class="flex items-center space-x-2">
                 <span id="sync-status" class="text-xs bg-blue-800 px-2 py-1 rounded text-blue-200">正在連線雲端...</span>
-                <button onclick="switchTab('goods-tab')" class="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-800 transition cursor-pointer">貨物管理</button>
-                <button onclick="switchTab('shipping-tab')" class="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-800 transition cursor-pointer">準備出貨</button>
-                <button onclick="switchTab('history-tab')" class="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-800 transition cursor-pointer">過往貨單</button>
+                <button onclick="switchTab('goods-tab')"
+                    class="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-800 transition cursor-pointer">貨物管理</button>
+                <button onclick="switchTab('shipping-tab')"
+                    class="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-800 transition cursor-pointer">準備出貨</button>
+                <button onclick="switchTab('history-tab')"
+                    class="px-3 py-1.5 rounded bg-blue-700 hover:bg-blue-800 transition cursor-pointer">過往貨單</button>
             </div>
         </div>
     </nav>
@@ -41,38 +46,38 @@
             <div class="bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200">
                 <h2 class="text-lg font-bold mb-4 border-b pb-2 text-blue-600">➕ 手動 新增 / 修改貨物</h2>
                 <input type="hidden" id="edit-index">
-<input type="hidden" id="edit-id">
+                <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium mb-1 text-red-600 font-bold">商品分類分區</label>
-                        <select id="good-category" class="w-full border border-red-300 rounded p-2 bg-red-50 font-bold cursor-pointer">
-                            <option value="10">10 類</option>
-                            <option value="50">50 類</option>
-                            <option value="100">100 類</option>
-                            <option value="1000">1000 類</option>
+                        <select id="good-category"
+                            class="w-full border border-red-300 rounded p-2 bg-red-50 font-bold cursor-pointer">
+                            <option value="10 元">10 元</option>
+                            <option value="20 元">20 元</option>
+                            <option value="塑膠">塑膠</option>
+                            <option value="高價">高價</option>
                         </select>
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium mb-1">貨物編號</label>
-                        <input type="text" id="good-code" class="w-full border border-gray-300 rounded p-2" placeholder="例如：A01">
-                    </div>
+
                     <div class="md:col-span-3">
                         <label class="block text-sm font-medium mb-1">貨物名稱</label>
-                        <input type="text" id="good-name" class="w-full border border-gray-300 rounded p-2" placeholder="例如：高山烏龍茶">
+                        <input type="text" id="good-name" class="w-full border border-gray-300 rounded p-2"
+                            placeholder="例如：高山烏龍茶">
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium mb-1">價格</label>
-                        <input type="number" id="good-price" class="w-full border border-gray-300 rounded p-2" placeholder="例如：1200">
-                    </div>
+
                     <!-- 備註輸入框拉長 -->
                     <div class="md:col-span-3">
                         <label class="block text-sm font-medium mb-1 text-blue-600 font-bold">備註</label>
-                        <input type="text" id="good-note" class="w-full border border-blue-300 bg-blue-50/30 rounded p-2 focus:bg-white" placeholder="例如：一斤裝/真空包裝/附提袋">
+                        <input type="text" id="good-note"
+                            class="w-full border border-blue-300 bg-blue-50/30 rounded p-2 focus:bg-white"
+                            placeholder="例如：一斤裝/真空包裝/附提袋">
                     </div>
                 </div>
                 <div class="mt-4 flex space-x-2">
-                    <button onclick="saveGood()" id="btn-save" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-medium cursor-pointer">儲存貨物至雲端</button>
-                    <button onclick="clearGoodForm()" id="btn-cancel" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 hidden cursor-pointer">取消修改</button>
+                    <button onclick="saveGood()" id="btn-save"
+                        class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-medium cursor-pointer">儲存貨物至雲端</button>
+                    <button onclick="clearGoodForm()" id="btn-cancel"
+                        class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 hidden cursor-pointer">取消修改</button>
                 </div>
             </div>
 
@@ -83,11 +88,18 @@
                         <h2 class="text-lg font-bold text-blue-600">📋 目前貨物列表 (可直接上下拖曳排序)</h2>
                     </div>
                     <div class="flex flex-wrap gap-1" id="manager-filter-buttons">
-                        <button onclick="filterManagerCategory('all')" id="m-btn-all" class="px-3 py-1 text-sm rounded bg-blue-600 text-white font-bold cursor-pointer">全部</button>
-                        <button onclick="filterManagerCategory('10')" id="m-btn-10" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">10 類</button>
-                        <button onclick="filterManagerCategory('50')" id="m-btn-50" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">50 類</button>
-                        <button onclick="filterManagerCategory('100')" id="m-btn-100" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">100 類</button>
-                        <button onclick="filterManagerCategory('1000')" id="m-btn-1000" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">1000 類</button>
+                        <button onclick="filterManagerCategory('all')" id="m-btn-all"
+                            class="px-3 py-1 text-sm rounded bg-blue-600 text-white font-bold cursor-pointer">全部</button>
+                        <button onclick="filterManagerCategory('10 元')" id="m-btn-10"
+                            class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">10
+                            元</button>
+                        <button onclick="filterManagerCategory('20 元')" id="m-btn-50"
+                            class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">20
+                            元</button>
+                        <button onclick="filterManagerCategory('塑膠')" id="m-btn-100"
+                            class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">塑膠</button>
+                        <button onclick="filterManagerCategory('高價')" id="m-btn-1000"
+                            class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">高價</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto border border-gray-200 rounded">
@@ -95,9 +107,7 @@
                         <thead>
                             <tr class="bg-gray-100 border-b border-gray-200">
                                 <th class="p-3 border-r border-gray-200" style="width: 90px;">分區</th>
-                                <th class="p-3 border-r border-gray-200" style="width: 100px;">編號</th>
                                 <th class="p-3 border-r border-gray-200" style="width: 220px;">名稱</th>
-                                <th class="p-3 border-r border-gray-200" style="width: 100px;">價格</th>
                                 <th class="p-3 border-r border-gray-200 text-blue-600 font-bold">備註</th>
                                 <th class="p-3 text-center" style="width: 130px;">操作</th>
                             </tr>
@@ -113,14 +123,22 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- 左側：挑選貨物 -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2">
+                    <div
+                        class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2">
                         <h2 class="text-lg font-bold text-orange-600 mb-2 md:mb-0">🛒 第一步：快速分區找貨</h2>
                         <div class="flex flex-wrap gap-1" id="shipping-filter-buttons">
-                            <button onclick="filterShippingCategory('all')" id="s-btn-all" class="px-3 py-1 text-sm rounded bg-orange-600 text-white font-bold cursor-pointer">全部商品</button>
-                            <button onclick="filterShippingCategory('10')" id="s-btn-10" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">10 類</button>
-                            <button onclick="filterShippingCategory('50')" id="s-btn-50" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">50 類</button>
-                            <button onclick="filterShippingCategory('100')" id="s-btn-100" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">100 類</button>
-                            <button onclick="filterShippingCategory('1000')" id="s-btn-1000" class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">1000 類</button>
+                            <button onclick="filterShippingCategory('all')" id="s-btn-all"
+                                class="px-3 py-1 text-sm rounded bg-orange-600 text-white font-bold cursor-pointer">全部商品</button>
+                            <button onclick="filterShippingCategory('10 元')" id="s-btn-10"
+                                class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">10
+                                元</button>
+                            <button onclick="filterShippingCategory('20 元')" id="s-btn-50"
+                                class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">20
+                                元</button>
+                            <button onclick="filterShippingCategory('塑膠')" id="s-btn-100"
+                                class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">塑膠</button>
+                            <button onclick="filterShippingCategory('高價')" id="s-btn-1000"
+                                class="px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer">高價</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto border border-gray-200 rounded">
@@ -129,7 +147,6 @@
                                 <tr class="bg-gray-100 border-b border-gray-200">
                                     <th class="p-3 border-r border-gray-200" style="width: 250px;">編號 - 名稱</th>
                                     <th class="p-3 border-r border-gray-200" style="width: 90px;">分區</th>
-                                    <th class="p-3 border-r border-gray-200" style="width: 90px;">價格</th>
                                     <th class="p-3 border-r border-gray-200 text-blue-600 font-bold">備註</th>
                                     <th class="p-3 text-center" style="width: 90px;">操作</th>
                                 </tr>
@@ -144,24 +161,39 @@
                     <h2 class="text-lg font-bold mb-4 border-b pb-2 text-orange-600">📝 第二步：填寫數量與確認</h2>
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-1 font-bold">客戶名稱 / 單號備註</label>
-                        <input type="text" id="order-customer" class="w-full border border-gray-300 rounded p-2" placeholder="例如：陳阿姨 5/23 單">
+                        <input type="text" id="order-customer" class="w-full border border-gray-300 rounded p-2"
+                            placeholder="例如：陳阿姨 5/23 單">
                     </div>
-                    <div class="divide-y overflow-y-auto mb-4 border border-gray-200 rounded p-2 bg-gray-50" id="cart-list"></div>
-                    <button onclick="printOrder()" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-orange-700 shadow transition cursor-pointer">
-                        🖨️ 確認出貨(上傳雲端並列印)
-                    </button>
+                    <div class="divide-y overflow-y-auto mb-4 border border-gray-200 rounded p-2 bg-gray-50"
+                        id="cart-list"></div>
+                    <div class="flex gap-2">
+
+                        <!-- 🖨️ 列印 -->
+                        <button onclick="printOrder()"
+                            class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-orange-700 shadow transition cursor-pointer">
+                            🖨️ 出貨列印
+                        </button>
+
+                        <!-- 🔥 同步 -->
+                        <button onclick="syncOrderToExcel()"
+                            class="w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 shadow transition cursor-pointer">
+                            ⟳ 同步Excel
+                        </button>
+
                 </div>
             </div>
-        </div>
 
-        <!-- 3️⃣ 過往貨單分頁 -->
-        <div id="history-tab" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 class="text-lg font-bold mb-4 border-b pb-2 text-purple-600">📜 歷史出貨紀錄（本機快取）</h2>
-                <p class="text-xs text-gray-500 mb-4">💡 出貨單確認後會自動記錄在 Google 試算表的 "orders" 分頁中，方便記帳唷！</p>
-                <div class="space-y-4" id="history-list"></div>
-            </div>
         </div>
+    </div>
+
+    <!-- 3️⃣ 過往貨單分頁 -->
+    <div id="history-tab" class="tab-content hidden">
+        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h2 class="text-lg font-bold mb-4 border-b pb-2 text-purple-600">📜 歷史出貨紀錄（本機快取）</h2>
+            <p class="text-xs text-gray-500 mb-4">💡 出貨單確認後會自動記錄在 Google 試算表的 "orders" 分頁中，方便記帳唷！</p>
+            <div class="space-y-4" id="history-list"></div>
+        </div>
+    </div>
 
     </div>
 
@@ -169,59 +201,103 @@
     <div id="print-zone">
         <style>
             /* 列印專用樣式 */
-           @media print {
-        /* 強制瀏覽器將紙張邊距歸零 */
-        @page { 
-            margin: 0 !important; 
-            size: auto; 
-        }
+            @media print {
 
-        body * { visibility: hidden; }
-        #print-zone, #print-zone * { visibility: visible; }
-        
-        #print-zone {
-            display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            padding: 5px !important; /* 極小的邊距，僅留出物理邊界 */
-            margin: 0 !important;
-        }
+                /* 強制瀏覽器將紙張邊距歸零 */
+                @page {
+                    margin: 0 !important;
+                    size: auto;
+                }
 
-        /* 隱藏不想印出的元素 */
-        .tab-content, nav, #loading-spinner { display: none !important; }
-    }
+                body * {
+                    visibility: hidden;
+                }
 
-    #print-zone { 
-        display: none; 
-        font-family: "Microsoft JhengHei", sans-serif; 
-        color: #000; 
-    }
-    @media print { #print-zone { display: block; } }
+                #print-zone,
+                #print-zone * {
+                    visibility: visible;
+                }
 
-    .print-header { 
-        display: flex; justify-content: space-between; align-items: flex-end; 
-        border-bottom: 2px solid #000; padding-bottom: 1px; margin-bottom: 2px; 
-    }
-    .print-title { font-size: 18px; font-weight: 900; }
-    .print-meta { font-size: 11px; text-align: right; }
-    
-    .print-table { 
-        width: 100%; border-collapse: collapse; margin: 0;
-        table-layout: fixed; /* 強制固定寬度，不讓內容溢出 */
-    }
-    .print-table th { 
-        border: 1px solid #000; padding: 1px; font-size: 10px; 
-        background-color: #eee !important; 
-        -webkit-print-color-adjust: exact; 
-    }
-    .print-table td { 
-        padding: 0px 2px; font-size: 10px; border: 1px solid #000; 
-        line-height: 1.1; /* 縮小行距 */
-        word-wrap: break-word;
-    }
-    .print-footer { text-align: center; font-size: 9px; margin-top: 2px; }
+                #print-zone {
+                    display: block !important;
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    padding: 5px !important;
+                    /* 極小的邊距，僅留出物理邊界 */
+                    margin: 0 !important;
+                }
+
+                /* 隱藏不想印出的元素 */
+                .tab-content,
+                nav,
+                #loading-spinner {
+                    display: none !important;
+                }
+            }
+
+            #print-zone {
+                display: none;
+                font-family: "Microsoft JhengHei", sans-serif;
+                color: #000;
+            }
+
+            @media print {
+                #print-zone {
+                    display: block;
+                }
+            }
+
+            .print-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                border-bottom: 2px solid #000;
+                padding-bottom: 1px;
+                margin-bottom: 2px;
+            }
+
+            .print-title {
+                font-size: 18px;
+                font-weight: 900;
+            }
+
+            .print-meta {
+                font-size: 11px;
+                text-align: right;
+            }
+
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0;
+                table-layout: fixed;
+                /* 強制固定寬度，不讓內容溢出 */
+            }
+
+            .print-table th {
+                border: 1px solid #000;
+                padding: 1px;
+                font-size: 10px;
+                background-color: #eee !important;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .print-table td {
+                padding: 0px 2px;
+                font-size: 10px;
+                border: 1px solid #000;
+                line-height: 1.1;
+                /* 縮小行距 */
+                word-wrap: break-word;
+            }
+
+            .print-footer {
+                text-align: center;
+                font-size: 9px;
+                margin-top: 2px;
+            }
         </style>
         <div class="print-header">
             <h1 class="print-title">出 貨 單</h1>
@@ -233,12 +309,10 @@
         <table class="print-table">
             <thead>
                 <tr>
-                    <th style="width: 10%; padding-left: 6px; border-r: 1px solid #000;">編號</th>
                     <th style="width: 22%; border-r: 1px solid #000;">品名</th>
                     <th style="width: 6%; text-align: center; border-r: 1px solid #000;">數量</th>
                     <th style="width: 12%; border-r: 3px solid #000; color: #1d4ed8;">備註(長)</th> <!-- 左邊欄備註 -->
-                    
-                    <th style="width: 10%; padding-left: 10px; border-r: 1px solid #000;">編號</th>
+
                     <th style="width: 22%; border-r: 1px solid #000;">品名</th>
                     <th style="width: 6%; text-align: center; border-r: 1px solid #000;">數量</th>
                     <th style="width: 12%; color: #1d4ed8;">備註(長)</th> <!-- 右邊欄備註 -->
@@ -254,4 +328,5 @@
     <!-- 引入主要邏輯程式碼 -->
     <script src="app.js"></script>
 </body>
+
 </html>
