@@ -22,6 +22,35 @@ function isInCart(id) {
     return cart.some(item => item.productId === id);
 }
 
+/**
+ * 手動修改購物車排序
+ */
+function changeCartOrder(oldIndex, newPosition) {
+
+    newPosition = parseInt(newPosition);
+
+    // 防呆
+    if (isNaN(newPosition)) return;
+
+    // 轉成陣列 index
+    let newIndex = newPosition - 1;
+
+    // 超出範圍
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex >= cart.length) newIndex = cart.length - 1;
+
+    // 不動
+    if (oldIndex === newIndex) return;
+
+    // 取出項目
+    const movedItem = cart.splice(oldIndex, 1)[0];
+
+    // 插入新位置
+    cart.splice(newIndex, 0, movedItem);
+
+    renderCart();
+}
+
 
 function toggleCart(id) {
     const good = goods.find(g => String(g.id) === String(id));
@@ -664,7 +693,7 @@ function render() {
             `;
     }
 
-    
+
 
     // 3. 渲染：歷史紀錄列表區
     // 3. 渲染：歷史紀錄列表區
@@ -728,10 +757,33 @@ function renderCart() {
             </div>
             <div class="text-xs text-gray-400 mt-0.5 break-all">備註：<span class="text-blue-600 font-medium">${item.note || '無'}</span></div>
             <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+            <div class="flex items-center gap-2">
+                <!-- 排序 -->
+                <div class="flex items-center space-x-1">
+                    <span class="text-xs text-gray-500">排序:</span>
+
+                    <input
+                        type="number"
+                        min="1"
+                        value="${i + 1}"
+                        onchange="changeCartOrder(${i}, this.value)"
+                        class="w-12 border border-blue-300 rounded text-center text-sm p-0.5 font-bold bg-blue-50"
+                    >
+                </div>
+
+                <!-- 數量 -->
                 <div class="flex items-center space-x-1">
                     <span class="text-xs text-gray-500">數量:</span>
-                    <input type="number" value="${item.quantity}" onchange="updateCartQty(${i}, this.value)" class="w-14 border border-gray-300 rounded text-center text-sm p-0.5 font-bold">
+
+                    <input
+                        type="number"
+                        value="${item.quantity}"
+                        onchange="updateCartQty(${i}, this.value)"
+                        class="w-14 border border-gray-300 rounded text-center text-sm p-0.5 font-bold"
+                    >
                 </div>
+
+            </div>
             </div>
         </div>
     `).join('');
