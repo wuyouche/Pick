@@ -261,9 +261,9 @@ async function printOrder() {
 
 
 
-    // 帶入列印版面資料
-    document.getElementById('print-cust-name').innerText = customer;
-    document.getElementById('print-order-date').innerText = dateStr;
+    // // 帶入列印版面資料
+    // document.getElementById('print-cust-name').innerText = customer;
+    // document.getElementById('print-order-date').innerText = dateStr;
 
     // ===== PDF 雙欄交錯排版（1 3 / 2 4）=====
     const tbody = document.getElementById('print-table-body');
@@ -283,7 +283,7 @@ async function printOrder() {
 
         tr.innerHTML = `
         <!-- 左邊 -->
-        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 00; font-size: 20px;">
+        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 00; font-size: 17px;">
             ${left ? left.name : ''}
         </td>
         <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
@@ -294,7 +294,7 @@ async function printOrder() {
         </td>
 
         <!-- 右邊 -->
-        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500;font-size: 20px;">
+        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500;font-size: 17px;">
             ${right ? right.name : ''}
         </td>
         <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
