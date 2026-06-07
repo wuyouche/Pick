@@ -10,6 +10,10 @@ let cart = [];
 let currentManagerFilter = 'all';
 let currentShippingFilter = 'all';
 
+
+let currentCartPage = 1;
+const CART_PER_PAGE = 25;
+
 let currentGoodsPage = 1;
 const GOODS_PER_PAGE = 50;
 
@@ -377,11 +381,26 @@ function filterManagerCategory(cat) {
  */
 function filterShippingCategory(cat) {
     currentShippingFilter = cat;
+    currentShippingPage = 1;
+
     document.querySelectorAll('#shipping-filter-buttons button').forEach(btn => {
         btn.className = "px-3 py-1 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer";
     });
-    const activeBtn = document.getElementById(`s-btn-${cat}`);
-    if (activeBtn) activeBtn.className = "px-3 py-1 text-sm rounded bg-orange-600 text-white font-bold cursor-pointer";
+
+    const idMap = {
+        'all': 's-btn-all',
+        '10 元': 's-btn-10',
+        '20 元': 's-btn-50',
+        '塑膠': 's-btn-100',
+        '高價': 's-btn-1000'
+    };
+
+    const activeBtn = document.getElementById(idMap[cat]);
+
+    if (activeBtn) {
+        activeBtn.className = "px-3 py-1 text-sm rounded bg-orange-600 text-white font-bold shadow-md ring-2 ring-orange-300 cursor-pointer";
+    }
+
     render();
 }
 
@@ -482,6 +501,12 @@ async function deleteHistory(orderId) { // 直接接收 orderId
  */
 function removeFromCart(index) {
     cart.splice(index, 1);
+
+    const totalPages = Math.ceil(cart.length / CART_PER_PAGE) || 1;
+    if (currentCartPage > totalPages) {
+        currentCartPage = totalPages;
+    }
+
     render();
 }
 
@@ -741,52 +766,154 @@ function changeShippingPage(step) {
 
     render();
 }
+
+
+function changeCartPage(step) {
+    const totalPages = Math.ceil(cart.length / CART_PER_PAGE) || 1;
+
+    currentCartPage += step;
+
+    if (currentCartPage < 1) currentCartPage = 1;
+    if (currentCartPage > totalPages) currentCartPage = totalPages;
+
+    renderCart();
+}
+
+function goToCartPage(page) {
+    page = parseInt(page);
+
+    if (isNaN(page)) return;
+
+    const totalPages = Math.ceil(cart.length / CART_PER_PAGE) || 1;
+
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+
+    currentCartPage = page;
+    renderCart();
+}
+
 function renderCart() {
     const cartList = document.getElementById('cart-list');
     if (!cartList) return;
+
     if (cart.length === 0) {
+        currentCartPage = 1;
         cartList.innerHTML = `<p class="text-gray-400 text-center py-8">請從左側挑選商品...</p>`;
         return;
     }
 
-    cartList.innerHTML = cart.map((item, i) => `
-        <div class="flex flex-col p-2 bg-white rounded border border-gray-200 mb-2 shadow-xs">
-            <div class="flex justify-between items-start">
-                <span class="font-medium text-gray-900 break-all pr-2">${item.name}</span>
-                <button onclick="removeFromCart(${i})" class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer">❌</button>
-            </div>
-            <div class="text-xs text-gray-400 mt-0.5 break-all">備註：<span class="text-blue-600 font-medium">${item.note || '無'}</span></div>
-            <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-            <div class="flex items-center gap-2">
-                <!-- 排序 -->
-                <div class="flex items-center space-x-1">
-                    <span class="text-xs text-gray-500">排序:</span>
+    const totalPages = Math.ceil(cart.length / CART_PER_PAGE) || 1;
 
-                    <input
-                        type="number"
-                        min="1"
-                        value="${i + 1}"
-                        onchange="changeCartOrder(${i}, this.value)"
-                        class="w-12 border border-blue-300 rounded text-center text-sm p-0.5 font-bold bg-blue-50"
-                    >
+    if (currentCartPage > totalPages) currentCartPage = totalPages;
+    if (currentCartPage < 1) currentCartPage = 1;
+
+    const startIndex = (currentCartPage - 1) * CART_PER_PAGE;
+    const endIndex = startIndex + CART_PER_PAGE;
+
+    const pagedCart = cart.slice(startIndex, endIndex);
+
+    const cartItemsHTML = pagedCart.map((item, pageIndex) => {
+        const realIndex = startIndex + pageIndex;
+
+        return `
+            <div class="flex flex-col p-2 bg-white rounded border border-gray-200 mb-2 shadow-xs">
+                <div class="flex justify-between items-start">
+                    <span class="font-medium text-gray-900 break-all pr-2">
+                        ${realIndex + 1}. ${item.name}
+                    </span>
+                    <button onclick="removeFromCart(${realIndex})" 
+                        class="text-red-500 hover:text-red-700 text-xs font-bold cursor-pointer">
+                        ❌
+                    </button>
                 </div>
 
-                <!-- 數量 -->
-                <div class="flex items-center space-x-1">
-                    <span class="text-xs text-gray-500">數量:</span>
-
-                    <input
-                        type="number"
-                        value="${item.quantity}"
-                        onchange="updateCartQty(${i}, this.value)"
-                        class="w-14 border border-gray-300 rounded text-center text-sm p-0.5 font-bold"
-                    >
+                <div class="text-xs text-gray-400 mt-0.5 break-all">
+                    備註：
+                    <span class="text-blue-600 font-medium">${item.note || '無'}</span>
                 </div>
 
+                <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
+                    <div class="flex items-center gap-2">
+
+                        <!-- 排序 -->
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-gray-500">排序:</span>
+
+                            <input
+                                type="number"
+                                min="1"
+                                value="${realIndex + 1}"
+                                onchange="changeCartOrder(${realIndex}, this.value)"
+                                class="w-12 border border-blue-300 rounded text-center text-sm p-0.5 font-bold bg-blue-50"
+                            >
+                        </div>
+
+                        <!-- 數量 -->
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-gray-500">數量:</span>
+
+                            <input
+                                type="number"
+                                value="${item.quantity}"
+                                onchange="updateCartQty(${realIndex}, this.value)"
+                                class="w-14 border border-gray-300 rounded text-center text-sm p-0.5 font-bold"
+                            >
+                        </div>
+
+                    </div>
+                </div>
             </div>
+        `;
+    }).join('');
+
+    const pageButtonsHTML = Array.from({ length: totalPages }, (_, i) => {
+        const page = i + 1;
+
+        return `
+            <button
+                onclick="goToCartPage(${page})"
+                class="px-2 py-1 rounded text-xs font-bold cursor-pointer
+                    ${currentCartPage === page
+                        ? 'bg-orange-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
+            >
+                ${page}
+            </button>
+        `;
+    }).join('');
+
+    const paginationHTML = `
+        <div class="mt-3 pt-3 border-t border-gray-200">
+            <div class="flex justify-center items-center gap-2 flex-wrap">
+
+                <button
+                    onclick="changeCartPage(-1)"
+                    ${currentCartPage <= 1 ? 'disabled' : ''}
+                    class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-sm font-bold"
+                >
+                    上一頁
+                </button>
+
+                ${pageButtonsHTML}
+
+                <button
+                    onclick="changeCartPage(1)"
+                    ${currentCartPage >= totalPages ? 'disabled' : ''}
+                    class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-sm font-bold"
+                >
+                    下一頁
+                </button>
+
+            </div>
+
+            <div class="text-center text-xs text-gray-500 mt-2">
+                第 ${currentCartPage} / ${totalPages} 頁，共 ${cart.length} 筆商品
             </div>
         </div>
-    `).join('');
+    `;
+
+    cartList.innerHTML = cartItemsHTML + paginationHTML;
 }
 
 /**

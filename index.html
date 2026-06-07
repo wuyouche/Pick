@@ -180,20 +180,20 @@
                             ⟳ 同步Excel
                         </button>
 
+                    </div>
                 </div>
+
             </div>
-
         </div>
-    </div>
 
-    <!-- 3️⃣ 過往貨單分頁 -->
-    <div id="history-tab" class="tab-content hidden">
-        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-            <h2 class="text-lg font-bold mb-4 border-b pb-2 text-purple-600">📜 歷史出貨紀錄（本機快取）</h2>
-            <p class="text-xs text-gray-500 mb-4">💡 出貨單確認後會自動記錄在 Google 試算表的 "orders" 分頁中，方便記帳唷！</p>
-            <div class="space-y-4" id="history-list"></div>
+        <!-- 3️⃣ 過往貨單分頁 -->
+        <div id="history-tab" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-lg font-bold mb-4 border-b pb-2 text-purple-600">📜 歷史出貨紀錄（本機快取）</h2>
+                <p class="text-xs text-gray-500 mb-4">💡 出貨單確認後會自動記錄在 Google 試算表的 "orders" 分頁中，方便記帳唷！</p>
+                <div class="space-y-4" id="history-list"></div>
+            </div>
         </div>
-    </div>
 
     </div>
 
@@ -203,10 +203,12 @@
             /* 列印專用樣式 */
             @media print {
 
-                /* 強制瀏覽器將紙張邊距歸零 */
                 @page {
-                    margin: 0 !important;
-                    size: auto;
+                    margin: 8mm 0mm 0mm 0mm !important;
+                }
+
+                @page :first {
+                    margin: 2mm 0mm 0mm 0mm !important;
                 }
 
                 body * {
