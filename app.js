@@ -318,7 +318,7 @@ async function printOrder() {
                 ${left ? left.quantity : ''}
             </td>
 
-            <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
+            <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all;  font-size: 17px; font-weight: bold;">
                 ${left ? (left.note || '') : ''}
             </td>
 
@@ -331,7 +331,7 @@ async function printOrder() {
                 ${right ? right.quantity : ''}
             </td>
 
-            <td style="padding: 6px; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
+            <td style="padding: 6px; word-break: break-all;  font-size: 17px; font-weight: bold;">
                 ${right ? (right.note || '') : ''}
             </td>
         `;
