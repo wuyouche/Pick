@@ -274,8 +274,7 @@ async function printOrder() {
     const tbody = document.getElementById('print-table-body');
     tbody.innerHTML = '';
 
-    document.getElementById('print-cust-name').innerText = customer;
-    document.getElementById('print-order-date').innerText = dateStr;
+
 
     // ⭐ 讀取使用者設定：左邊一欄幾列
     let leftCount = parseInt(document.getElementById('print-left-count')?.value);
