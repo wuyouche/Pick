@@ -270,46 +270,75 @@ async function printOrder() {
     // document.getElementById('print-order-date').innerText = dateStr;
 
     // ===== PDF 雙欄交錯排版（1 3 / 2 4）=====
+    // ===== PDF 雙欄排版：使用者可調整左邊一欄幾列 =====
     const tbody = document.getElementById('print-table-body');
     tbody.innerHTML = '';
 
-    // 👉 關鍵：切一半
-    const half = Math.ceil(cart.length / 2);
+    document.getElementById('print-cust-name').innerText = customer;
+    document.getElementById('print-order-date').innerText = dateStr;
 
-    // 👉 左右交錯輸出
-    for (let i = 0; i < half; i++) {
+    // ⭐ 讀取使用者設定：左邊一欄幾列
+    let leftCount = parseInt(document.getElementById('print-left-count')?.value);
 
-        const left = cart[i];        // 左邊：0,1
-        const right = cart[i + half] || null; // 右邊：2,3
+    // ⭐ 防呆：如果沒輸入、輸入錯誤、小於 1，就預設 4
+    if (isNaN(leftCount) || leftCount < 1) {
+        leftCount = 25;
+    }
 
-        const tr = document.createElement('tr');
-        tr.style.borderBottom = '1px solid #000';
+    // ⭐ 一頁總筆數 = 左邊列數 x 2
+    const pageCount = leftCount * 2;
 
-        tr.innerHTML = `
-        <!-- 左邊 -->
-        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 00; font-size: 17px;">
-            ${left ? left.name : ''}
-        </td>
-        <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
-            ${left ? left.quantity : ''}
-        </td>
-        <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
-            ${left ? (left.note || '') : ''}
-        </td>
+    for (let pageStart = 0; pageStart < cart.length; pageStart += pageCount) {
 
-        <!-- 右邊 -->
-        <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500;font-size: 17px;">
-            ${right ? right.name : ''}
-        </td>
-        <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
-            ${right ? right.quantity : ''}
-        </td>
-        <td style="padding: 6px; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
-            ${right ? (right.note || '') : ''}
-        </td>
-    `;
+        const pageItems = cart.slice(pageStart, pageStart + pageCount);
 
-        tbody.appendChild(tr);
+        for (let i = 0; i < leftCount; i++) {
+
+            const left = pageItems[i] || null;
+            const right = pageItems[i + leftCount] || null;
+
+            // 左右都沒有資料就不產生空白列
+            if (!left && !right) continue;
+
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #000';
+
+            // ⭐ 第二頁開始強制換頁
+            if (pageStart !== 0 && i === 0) {
+                tr.style.pageBreakBefore = 'always';
+                tr.style.breakBefore = 'page';
+            }
+
+            tr.innerHTML = `
+            <!-- 左邊 -->
+            <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500; font-size: 17px;">
+                ${left ? left.name : ''}
+            </td>
+
+            <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
+                ${left ? left.quantity : ''}
+            </td>
+
+            <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
+                ${left ? (left.note || '') : ''}
+            </td>
+
+            <!-- 右邊 -->
+            <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500; font-size: 17px;">
+                ${right ? right.name : ''}
+            </td>
+
+            <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
+                ${right ? right.quantity : ''}
+            </td>
+
+            <td style="padding: 6px; word-break: break-all; color: #334155; font-size: 17px; font-weight: bold;">
+                ${right ? (right.note || '') : ''}
+            </td>
+        `;
+
+            tbody.appendChild(tr);
+        }
     }
     // 延遲小段時間確保 DOM 渲染完畢後開啟列印視窗
     setTimeout(() => {
@@ -875,8 +904,8 @@ function renderCart() {
                 onclick="goToCartPage(${page})"
                 class="px-2 py-1 rounded text-xs font-bold cursor-pointer
                     ${currentCartPage === page
-                        ? 'bg-orange-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}"
             >
                 ${page}
             </button>
