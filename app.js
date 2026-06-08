@@ -74,7 +74,8 @@ function toggleCart(id) {
             price: good.price,
             note: good.note,
             category: good.category,
-            quantity: 1
+            quantity: 1,
+            unit: ""
         });
     }
 
@@ -315,7 +316,7 @@ async function printOrder() {
             </td>
 
             <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
-                ${left ? left.quantity : ''}
+                ${left ? `${left.quantity}${left.unit || '個'}` : ''}
             </td>
 
             <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all;  font-size: 17px; font-weight: bold;">
@@ -328,7 +329,7 @@ async function printOrder() {
             </td>
 
             <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
-                ${right ? right.quantity : ''}
+                ${right ? `${right.quantity}${right.unit || '個'}` : ''}
             </td>
 
             <td style="padding: 6px; word-break: break-all;  font-size: 17px; font-weight: bold;">
@@ -447,6 +448,12 @@ function updateCartQty(index, qty) {
         cart[index].quantity = parsedQty;
     }
     renderCart();
+}
+
+
+function updateCartUnit(index, unit) {
+    if (!cart[index]) return;
+    cart[index].unit = unit.trim();
 }
 
 /**
@@ -878,6 +885,7 @@ function renderCart() {
                         </div>
 
                         <!-- 數量 -->
+                        <!-- 數量 + 單位 -->
                         <div class="flex items-center space-x-1">
                             <span class="text-xs text-gray-500">數量:</span>
 
@@ -887,8 +895,15 @@ function renderCart() {
                                 onchange="updateCartQty(${realIndex}, this.value)"
                                 class="w-14 border border-gray-300 rounded text-center text-sm p-0.5 font-bold"
                             >
-                        </div>
 
+                            <input
+                                type="text"
+                                value="${item.unit || '個'}"
+                                oninput="updateCartUnit(${realIndex}, this.value)"
+                                placeholder="單位"
+                                class="w-14 border border-gray-300 rounded text-center text-sm p-0.5"
+                            >
+                        </div>
                     </div>
                 </div>
             </div>
