@@ -125,7 +125,15 @@
                 <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border border-gray-200">
                     <div
                         class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2">
-                        <h2 class="text-lg font-bold text-orange-600 mb-2 md:mb-0">🛒 第一步：快速分區找貨</h2>
+                        <div class="flex items-center gap-2 mb-2 md:mb-0">
+                            <h2 class="text-lg font-bold text-orange-600">🛒 第一步：快速分區找貨</h2>
+
+                            <button onclick="refreshShippingList()"
+                                class="px-3 py-1 text-sm rounded bg-green-600 text-white hover:bg-green-700 font-bold cursor-pointer">
+                                ⟳ 更新列表
+                            </button>
+                        </div>
+
                         <div class="flex flex-wrap gap-1" id="shipping-filter-buttons">
                             <button onclick="filterShippingCategory('all')" id="s-btn-all"
                                 class="px-3 py-1 text-sm rounded bg-orange-600 text-white font-bold cursor-pointer">全部商品</button>

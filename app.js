@@ -148,6 +148,11 @@ async function fetchGoodsFromCloud() {
     }
 }
 
+
+async function refreshShippingList() {
+    currentShippingPage = 1;
+    await fetchGoodsFromCloud();
+}
 /**
  * 將目前整個貨物清單同步更新至雲端 Excel
  */
@@ -723,34 +728,50 @@ function render() {
         const shippingTotalPages = Math.ceil(filteredShippingGoods.length / SHIPPING_PER_PAGE);
 
         shippingTable.innerHTML += `
-            <tr>
-                <td colspan="4" class="p-4 text-center bg-gray-50">
-                    <div class="flex justify-center items-center gap-2">
+    <tr>
+        <td colspan="4" class="p-4 text-center bg-gray-50">
+            <div class="flex justify-center items-center gap-2 flex-wrap">
 
-                        <button
-                            onclick="changeShippingPage(-1)"
-                            ${currentShippingPage <= 1 ? 'disabled' : ''}
-                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                        >
-                            上一頁
-                        </button>
+                <button
+                    onclick="goToShippingPage(1)"
+                    ${currentShippingPage <= 1 ? 'disabled' : ''}
+                    class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                >
+                    第一頁
+                </button>
 
-                        <span class="font-bold text-sm">
-                            第 ${currentShippingPage} / ${shippingTotalPages || 1} 頁
-                        </span>
+                <button
+                    onclick="changeShippingPage(-1)"
+                    ${currentShippingPage <= 1 ? 'disabled' : ''}
+                    class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                >
+                    上一頁
+                </button>
 
-                        <button
-                            onclick="changeShippingPage(1)"
-                            ${currentShippingPage >= shippingTotalPages ? 'disabled' : ''}
-                            class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                        >
-                            下一頁
-                        </button>
+                <span class="font-bold text-sm">
+                    第 ${currentShippingPage} / ${shippingTotalPages || 1} 頁
+                </span>
 
-                    </div>
-                </td>
-            </tr>
-            `;
+                <button
+                    onclick="changeShippingPage(1)"
+                    ${currentShippingPage >= shippingTotalPages ? 'disabled' : ''}
+                    class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                >
+                    下一頁
+                </button>
+
+                <button
+                    onclick="goToShippingPage(${shippingTotalPages || 1})"
+                    ${currentShippingPage >= shippingTotalPages ? 'disabled' : ''}
+                    class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                >
+                    最後一頁
+                </button>
+
+            </div>
+        </td>
+    </tr>
+`;
     }
 
 
@@ -1024,3 +1045,23 @@ window.addEventListener('DOMContentLoaded', () => {
     // 延遲 500ms 讓 Goods 先載入，避免兩者同時搶佔網路資源
     setTimeout(fetchHistoryFromCloud, 500);
 });
+
+
+function goToShippingPage(page) {
+    page = parseInt(page);
+
+    if (isNaN(page)) return;
+
+    const filteredGoods = goods.filter(g => {
+        const cat = String(g.category || '10 元');
+        return currentShippingFilter === 'all' || currentShippingFilter === cat;
+    });
+
+    const totalPages = Math.ceil(filteredGoods.length / SHIPPING_PER_PAGE) || 1;
+
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+
+    currentShippingPage = page;
+    render();
+}
