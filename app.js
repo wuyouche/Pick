@@ -256,100 +256,350 @@ function clearGoodForm() {
  * 執行出貨流程：上傳雲端 orders 紀錄、寫入快取並調用系統列印
  */
 async function printOrder() {
+
+    // ===============================
+    // 1. 檢查購物車
+    // ===============================
     if (cart.length === 0) {
         alert('出貨清單是空的喔！');
         return;
     }
-    const customer = document.getElementById('order-customer').value.trim() || '未命名客戶';
+
+    const customer =
+        document.getElementById('order-customer').value.trim()
+        || '未命名客戶';
+
     const today = new Date();
-    const dateStr = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+
+    const dateStr =
+        `${today.getFullYear()}/` +
+        `${String(today.getMonth() + 1).padStart(2, '0')}/` +
+        `${String(today.getDate()).padStart(2, '0')}`;
+
     const timeStr = today.toLocaleString('zh-TW');
 
-    let totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    let itemsSummary = cart.map(item => `${item.name}x${item.quantity}`).join(', ');
+    let totalAmount = cart.reduce(
+        (sum, item) => sum + ((item.price || 0) * item.quantity),
+        0
+    );
+
+    let itemsSummary = cart
+        .map(item => `${item.name}x${item.quantity}`)
+        .join(', ');
 
 
-
-
-    // // 帶入列印版面資料
-    // document.getElementById('print-cust-name').innerText = customer;
-    // document.getElementById('print-order-date').innerText = dateStr;
-
-    // ===== PDF 雙欄交錯排版（1 3 / 2 4）=====
-    // ===== PDF 雙欄排版：使用者可調整左邊一欄幾列 =====
+    // ===============================
+    // 2. 取得 PDF 表格
+    // ===============================
     const tbody = document.getElementById('print-table-body');
+
+    if (!tbody) {
+        alert('找不到列印表格 print-table-body');
+        return;
+    }
+
     tbody.innerHTML = '';
 
 
+    // ===============================
+    // 3. 每一欄要幾筆
+    // ===============================
+    let leftCount = parseInt(
+        document.getElementById('print-left-count')?.value
+    );
 
-    // ⭐ 讀取使用者設定：左邊一欄幾列
-    let leftCount = parseInt(document.getElementById('print-left-count')?.value);
-
-    // ⭐ 防呆：如果沒輸入、輸入錯誤、小於 1，就預設 4
+    // 沒輸入時預設 25 筆
     if (isNaN(leftCount) || leftCount < 1) {
         leftCount = 25;
     }
 
-    // ⭐ 一頁總筆數 = 左邊列數 x 2
+
+    // ===============================
+    // 4. 一頁總筆數
+    // 左 25 + 右 25 = 50
+    // ===============================
     const pageCount = leftCount * 2;
 
-    for (let pageStart = 0; pageStart < cart.length; pageStart += pageCount) {
 
-        const pageItems = cart.slice(pageStart, pageStart + pageCount);
+    // ===============================
+    // 5. 建立 PDF 表格
+    // ===============================
+    for (
+        let pageStart = 0;
+        pageStart < cart.length;
+        pageStart += pageCount
+    ) {
 
+        const pageItems =
+            cart.slice(pageStart, pageStart + pageCount);
+
+
+        // -------------------------------
+        // 一頁左邊幾列
+        // -------------------------------
         for (let i = 0; i < leftCount; i++) {
 
             const left = pageItems[i] || null;
-            const right = pageItems[i + leftCount] || null;
 
-            // 左右都沒有資料就不產生空白列
-            if (!left && !right) continue;
+            const right =
+                pageItems[i + leftCount] || null;
 
+
+            // 左右都沒有資料
+            if (!left && !right) {
+                continue;
+            }
+
+
+            // 建立一列
             const tr = document.createElement('tr');
+
             tr.style.borderBottom = '1px solid #000';
 
-            // ⭐ 第二頁開始強制換頁
+
+            // ===============================
+            // 第二頁開始強制換頁
+            // ===============================
             if (pageStart !== 0 && i === 0) {
+
                 tr.style.pageBreakBefore = 'always';
+
                 tr.style.breakBefore = 'page';
             }
 
+
+            // ===============================
+            // 表格內容
+            // ===============================
             tr.innerHTML = `
-            <!-- 左邊 -->
-            <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500; font-size: 17px;">
-                ${left ? left.name : ''}
-            </td>
 
-            <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
-                ${left ? `${left.quantity}${left.unit || '個'}` : ''}
-            </td>
+                <!-- =========================
+                     左邊：貨物名稱
+                ========================== -->
+                <td style="
+                    padding: 6px;
+                    border-right: 1px solid #000;
+                    word-break: break-all;
+                    font-weight: 500;
+                    font-size: 17px;
+                ">
+                    ${left ? left.name : ''}
+                </td>
 
-            <td style="padding: 6px; border-right: 3px solid #000; word-break: break-all;  font-size: 17px; font-weight: bold;">
-                ${left ? (left.note || '') : ''}
-            </td>
 
-            <!-- 右邊 -->
-            <td style="padding: 6px; border-right: 1px solid #000; word-break: break-all; font-weight: 500; font-size: 17px;">
-                ${right ? right.name : ''}
-            </td>
+                <!-- =========================
+                     左邊：數量
+                ========================== -->
+                <td style="
+                    padding: 6px;
+                    border-right: 1px solid #000;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 20px;
+                ">
+                    ${
+                        left
+                        ? `${left.quantity}${left.unit || '個'}`
+                        : ''
+                    }
+                </td>
 
-            <td style="padding: 6px; border-right: 1px solid #000; text-align: center; font-weight: bold; font-size: 20px;">
-                ${right ? `${right.quantity}${right.unit || '個'}` : ''}
-            </td>
 
-            <td style="padding: 6px; word-break: break-all;  font-size: 17px; font-weight: bold;">
-                ${right ? (right.note || '') : ''}
-            </td>
-        `;
+                <!-- =========================
+                     左邊：備註
+                ========================== -->
+                <td style="
+                    padding: 6px;
+                    border-right: 3px solid #000;
+                    word-break: break-all;
+                    font-size: 17px;
+                    font-weight: bold;
+                ">
+                    ${
+                        left
+                        ? (left.note || '')
+                        : ''
+                    }
+                </td>
+
+
+                <!-- =========================
+                     右邊：貨物名稱
+                ========================== -->
+                <td style="
+                    padding: 6px;
+                    border-right: 1px solid #000;
+                    word-break: break-all;
+                    font-weight: 500;
+                    font-size: 17px;
+                ">
+                    ${right ? right.name : ''}
+                </td>
+
+
+                <!-- =========================
+                     右邊：數量
+                ========================== -->
+                <td style="
+                    padding: 6px;
+                    border-right: 1px solid #000;
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 20px;
+                ">
+                    ${
+                        right
+                        ? `${right.quantity}${right.unit || '個'}`
+                        : ''
+                    }
+                </td>
+
+
+                <!-- =========================
+                     右邊：備註
+                ========================== -->
+                <td style="
+                    padding: 6px;
+                    word-break: break-all;
+                    font-size: 17px;
+                    font-weight: bold;
+                ">
+                    ${
+                        right
+                        ? (right.note || '')
+                        : ''
+                    }
+                </td>
+
+            `;
+
 
             tbody.appendChild(tr);
         }
     }
-    // 延遲小段時間確保 DOM 渲染完畢後開啟列印視窗
+
+
+    // ==================================================
+    // 6. ⭐ 找到整張列印 Table
+    // ==================================================
+    const printTable = tbody.closest('table');
+
+
+    // ==================================================
+    // 7. ⭐ 讓整張 PDF 稍微往內縮
+    // ==================================================
+    if (printTable) {
+
+        // 原本寬度可能是 100%
+        // 改成 95%
+        printTable.style.width = '96.5%';
+
+        // 水平置中
+        printTable.style.marginLeft = 'auto';
+        printTable.style.marginRight = 'auto';
+
+        // ⭐ 整體大小縮成 95%
+        printTable.style.zoom = '0.965';
+
+        // 確保從上方中央縮放
+        printTable.style.transformOrigin = 'top center';
+    }
+
+
+    // ==================================================
+    // 8. 加入列印專用 CSS
+    // ==================================================
+    let printStyle =
+        document.getElementById('goods-print-shrink-style');
+
+
+    // 避免重複新增
+    if (!printStyle) {
+
+        printStyle = document.createElement('style');
+
+        printStyle.id = 'goods-print-shrink-style';
+
+
+        printStyle.innerHTML = `
+
+            @media print {
+
+                /* ==========================
+                   A4 紙張
+                ========================== */
+                @page {
+                    size: A4;
+                    margin:
+                        8mm
+                        8mm
+                        8mm
+                        8mm;
+                }
+
+
+                /* ==========================
+                   整張貨物表格
+                   往內縮、置中
+                ========================== */
+                #print-table-body {
+                    font-size: 95%;
+                }
+
+
+                #print-table-body tr {
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                }
+
+
+                #print-table-body td {
+
+                    /* 原本 padding 6px
+                       稍微縮小 */
+                    padding-top: 5px !important;
+                    padding-bottom: 5px !important;
+                }
+
+            }
+
+        `;
+
+
+        document.head.appendChild(printStyle);
+    }
+
+
+    // ==================================================
+    // 9. 等畫面建立完成
+    // ==================================================
     setTimeout(() => {
+
+        // 開啟瀏覽器列印
         window.print();
-        showLoading(false)
+
+
+        // ===============================
+        // 列印完成後恢復畫面
+        // ===============================
+        if (printTable) {
+
+            printTable.style.width = '';
+
+            printTable.style.marginLeft = '';
+
+            printTable.style.marginRight = '';
+
+            printTable.style.zoom = '';
+
+            printTable.style.transformOrigin = '';
+        }
+
+
+        showLoading(false);
+
         render();
+
     }, 300);
 }
 

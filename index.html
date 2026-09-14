@@ -224,6 +224,10 @@
             /* 列印專用樣式 */
             @media print {
 
+                .print-table thead {
+                    display: table-header-group;
+                }
+
                 @page {
                     margin: 8mm 0mm 0mm 0mm !important;
                 }
@@ -322,15 +326,26 @@
                 margin-top: 2px;
             }
         </style>
-        <div class="print-header">
-            <h1 class="print-title">0048</h1>
-            <div class="print-meta">
-                <div><strong></strong><span id="print-cust-name"></span></div>
-                <div><strong></strong><span id="print-order-date"></span></div>
-            </div>
-        </div>
         <table class="print-table">
+
             <thead>
+
+                <tr>
+                    <th colspan="6" style="
+                    text-align: left;
+                    padding-left: 30px;
+                    font-size: 18px;
+                    font-weight: 900;
+                    background: white !important;
+                    border: none;
+                    border-bottom: 2px solid #000;
+                    height: 25px;
+                ">
+                        0048
+                    </th>
+                </tr>
+
+                <!-- 欄位名稱，每一頁也會重複 -->
                 <tr>
                     <th style="width: 22%; border-r: 1px solid #000;">品名</th>
                     <th style="width: 6%; text-align: center; border-r: 1px solid #000;">數量</th>
@@ -339,9 +354,13 @@
                     <th style="width: 22%; border-r: 1px solid #000;">品名</th>
                     <th style="width: 6%; text-align: center; border-r: 1px solid #000;">數量</th>
                     <th style="width: 12%; color: #1d4ed8;">備註</th> <!-- 右邊欄備註 -->
+
                 </tr>
+
             </thead>
+
             <tbody id="print-table-body"></tbody>
+
         </table>
     </div>
 
